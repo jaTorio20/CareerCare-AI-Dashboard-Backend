@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                  // modern JS features
+    "module": "CommonJS",                // Node.js default (unless you go full ESM)
+    "rootDir": "./src",                  // source files
+    "outDir": "./dist",                  // compiled output
+    "strict": true,                      // all strict type checks
+    "esModuleInterop": true,             // allows default imports (express, mongoose, etc.)
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,                // faster builds, skip type checks in node_modules
+    "resolveJsonModule": true,           // import JSON files if needed
+    "moduleResolution": "node",          // modern Node resolution
+    "allowSyntheticDefaultImports": true // smoother interop with JS libs
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

@@ -1,3 +1,13 @@
+For typescript setup:
+
+npm i express cors dotenv
+
+npm i -D typescript ts-node @types/node @types/express @types/cors nodemon
+
+npx tsc --init
+
+## package.json:
+
 {
   "name": "careercare-backend",
   "version": "1.0.0",
@@ -26,3 +36,5 @@
     "typescript": "^5.9.3"
   }
 }
+
+

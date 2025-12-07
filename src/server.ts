@@ -1,9 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
-import cors from 'cors';  
-import Test from './models/Test.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import connectDB from './config/db';
+import cors from 'cors'; 
+import { errorHandler } from './middleware/errorHandler';
+import testRoute from './routes/testRoute';
 dotenv.config();
 
 const app = express();
@@ -15,23 +15,14 @@ connectDB();
 
 // CORS Configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS || 8000,
+  origin: process.env.ALLOWED_ORIGINS || `http://localhost:3000`, // Adjust as needed
   credentials: true //for allowing to send header value
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.post('/api/test', async (req, res) => {
-  try {
-    const { name } = req.body;
-    const newTest = new Test({ name });
-    await newTest.save();
-    res.status(201).json(newTest);
-  } catch (err) {
-    console.error("Failed to create test",err);
-  }
-});
+app.use('/api/test', testRoute);
 
 //404 Fallback
 app.use((req, res, next) => {
