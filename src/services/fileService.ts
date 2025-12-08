@@ -1,5 +1,5 @@
-import pdfParse from "pdf-parse";
-import { extractRawText } from "mammoth";
+import mammoth from "mammoth";
+const pdfParse = require("pdf-parse");
 
 export async function parseFile(file: Express.Multer.File): Promise<string> {
   if (!file || !file.buffer) {
@@ -18,7 +18,7 @@ export async function parseFile(file: Express.Multer.File): Promise<string> {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     mimeType === "application/msword"
   ) {
-    const result = await extractRawText({ buffer: file.buffer });
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
     return result.value;
   }
 

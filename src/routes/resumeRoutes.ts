@@ -1,39 +1,41 @@
-import express, { ErrorRequestHandler, Request, Response, NextFunction } from 'express';
-import { ResumeModel, ResumeCreate } from '../models/Resume';
+import express, { Request, Response, NextFunction } from 'express';
+import { ResumeModel} from '../models/Resume';
 import { uploadMiddleware } from '../middleware/uploadMiddleware';
 import {uploadToCloudinary} from '../services/cloudinaryService';
 import { parseFile } from '../services/fileService';
+import { analyzeResume } from '../services/aiService';
 
 const router = express.Router();
 
 // @route          POST /api/resumes
 // @desccription   CREATE a new resume entry
 // @access          Public
-router.post("/", uploadMiddleware.single("resumeFile"),
+router.post("/analyze", uploadMiddleware.single("resumeFile"),
  async (req: Request, res: Response, next: NextFunction) => {
   try {
-      // if (!req.body.userId || !req.file) {
-      if (!req.body.userId || !req.file) {
-        return res.status(400).json({ error: "userId and resumeFile are required" });
-      }
+    // if (!req.body.userId || !req.file) {
+    if (!req.file) {
+      return res.status(400).json({ error: "userId and resumeFile are required" });
+    }
 
-      // Upload to Cloudinary
-      const uploadResult = await uploadToCloudinary(req.file.buffer);
+    // Upload to Cloudinary
+    const uploadResult = await uploadToCloudinary(req.file.buffer);
 
-      // Parse file (you can use req.file.buffer or Cloudinary URL)
-      const resumeText = await parseFile(req.file);
-      // Run AI analysis
-      const analysis = await analyzeResume(resumeText, req.body.jobDescriptionFile);
+    // Parse file
+    const resumeText = await parseFile(req.file);
 
-      const newResume = new ResumeModel({
-        userId: req.body.userId,
-        resumeFile: uploadResult?.secure_url, //store Cloudinary URL
-        jobDescriptionFile: req.body.jobDescriptionFile,
-        analysis: analysis,
-      });
+    // Run AI analysis
+    const analysis = await analyzeResume(resumeText, req.body.jobDescription);
 
-        await newResume.save();
-        res.status(201).json(newResume);
+    const newResume = new ResumeModel({
+      userId: req.body.userId, //will be replaced by req.user._id later on for auth middleware
+      resumeFile: uploadResult?.secure_url, //store Cloudinary URL
+      jobDescription: req.body.jobDescription,
+      analysis: analysis,
+    });
+
+    await newResume.save();
+    res.status(201).json(newResume);
   } catch (err) {
     console.error("Failed to upload resume", err);
     next(err);
