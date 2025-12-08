@@ -2,6 +2,7 @@ import express, { ErrorRequestHandler, Request, Response, NextFunction } from 'e
 import { ResumeModel, ResumeCreate } from '../models/Resume';
 import { uploadMiddleware } from '../middleware/uploadMiddleware';
 import {uploadToCloudinary} from '../services/cloudinaryService';
+import { parseFile } from '../services/fileService';
 
 const router = express.Router();
 

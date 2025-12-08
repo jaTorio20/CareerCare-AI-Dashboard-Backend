@@ -10,7 +10,8 @@
     "skipLibCheck": true,                // faster builds, skip type checks in node_modules
     "resolveJsonModule": true,           // import JSON files if needed
     "moduleResolution": "node",          // modern Node resolution
-    "allowSyntheticDefaultImports": true // smoother interop with JS libs
+    "allowSyntheticDefaultImports": true, // smoother interop with JS libs
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
