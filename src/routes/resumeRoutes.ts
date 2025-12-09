@@ -18,6 +18,16 @@ router.post("/analyze", uploadMiddleware.single("resumeFile"),
       return res.status(400).json({ error: "userId and resumeFile are required" });
     }
 
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: "Unsupported file type" });
+    }
+
     // Upload to Cloudinary
     const uploadResult = await uploadToCloudinary(req.file.buffer);
 

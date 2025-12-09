@@ -1,5 +1,5 @@
 import mammoth from "mammoth";
-const pdfParse = require("pdf-parse");
+import {PDFParse} from "pdf-parse";
 
 export async function parseFile(file: Express.Multer.File): Promise<string> {
   if (!file || !file.buffer) {
@@ -9,8 +9,10 @@ export async function parseFile(file: Express.Multer.File): Promise<string> {
   const mimeType = file.mimetype;
 
   if (mimeType === "application/pdf") {
-    const data = await pdfParse(file.buffer);
-    return data.text;
+    const convertData = new Uint8Array(file.buffer); // Convert Buffer to Uint8Array
+    const data = new PDFParse(convertData);
+    const result = await data.getText({});
+    return result.text;
   }
 
   if (
