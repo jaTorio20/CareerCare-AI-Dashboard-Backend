@@ -5,6 +5,7 @@ dotenv.config();
 const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function analyzeResume(resumeText: string, jobDescription?: string) {
+  
   const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = jobDescription
@@ -42,7 +43,15 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
     .trim();
 
   try {
-    return JSON.parse(text);
+  const parsed = JSON.parse(text)
+
+  // Normalize shape
+  return {
+    atsFriendly: parsed.atsFriendly ?? false,
+    atsSuggestions: parsed.atsSuggestions ?? [],
+    jobFitPercentage: parsed.jobFitPercentage ?? 0,
+    jobFitSuggestions: parsed.jobFitSuggestions ?? [],
+  }
   } catch (err) {
     console.error("Failed to parse Gemini response:", text);
     throw new Error("Gemini did not return valid JSON");
