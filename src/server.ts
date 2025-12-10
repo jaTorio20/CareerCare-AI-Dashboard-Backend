@@ -5,6 +5,7 @@ import cors from 'cors';
 import { errorHandler } from './middleware/errorHandler';
 import testRoute from './routes/testRoute';
 import analyzeRoutes from './routes/analyzeRoutes';
+import resumeRoutes from './routes/resumeRoutes';
 dotenv.config();
 
 const app = express();
@@ -24,7 +25,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/test', testRoute);
-app.use('/api/resumes', analyzeRoutes);
+app.use('/api/resumes', resumeRoutes);
+app.use('/api/resumes/analyze', analyzeRoutes);
 
 //404 Fallback
 app.use((req, res, next) => {

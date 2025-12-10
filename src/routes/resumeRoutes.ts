@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction } from "express";
 import { ResumeModel } from "../models/Resume";
-import { uploadMiddleware } from "../middleware/uploadMiddleware";
-import { uploadToCloudinary } from "../services/cloudinaryService";
-import { parseFile } from "../services/fileService";
-import { analyzeResume } from "../services/aiService";
+// import { uploadMiddleware } from "../middleware/uploadMiddleware";
+// import { uploadToCloudinary } from "../services/cloudinaryService";
+// import { parseFile } from "../services/fileService";
+// import { analyzeResume } from "../services/aiService";
 const router = express.Router();
 
 
@@ -33,5 +33,19 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     next(err);
   }
 });
+
+// @route          GET /api/resumes
+// @description    fetch all resumes for a user
+// @access         Public (later protected by auth)
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await ResumeModel.find().sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
+    res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 
 export default router;

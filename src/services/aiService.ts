@@ -6,7 +6,7 @@ const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function analyzeResume(resumeText: string, jobDescription?: string) {
   
-  const model = client.getGenerativeModel({ model: "gemini-2.0-flash-lite-001" });
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
   const prompt = jobDescription
     ? `You are an ATS resume analyzer.

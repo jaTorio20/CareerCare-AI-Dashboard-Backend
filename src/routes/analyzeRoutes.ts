@@ -10,7 +10,7 @@ const router = express.Router();
 // @route          POST /api/resumes/analyze
 // @desccription   CREATE and analyze a resume WITHOUT saving to DB
 // @access          Public
-router.post("/analyze", uploadMiddleware.single("resumeFile"),
+router.post("/", uploadMiddleware.single("resumeFile"),
  async (req: Request, res: Response, next: NextFunction) => {
   try {
     // if (!req.body.userId || !req.file) {
