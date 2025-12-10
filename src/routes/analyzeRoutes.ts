@@ -40,6 +40,7 @@ router.post("/", uploadMiddleware.single("resumeFile"),
     res.status(201).json({
       userId: req.body.userId, //will be replaced by req.user._id later on for auth middleware
       resumeFile: uploadResult?.secure_url, //store Cloudinary URL
+      publicId: uploadResult?.public_id,
       jobDescription: req.body.jobDescription,
       analysis: analysis,
     });
