@@ -37,15 +37,6 @@ router.post("/analyze", uploadMiddleware.single("resumeFile"),
     // Run AI analysis
     const analysis = await analyzeResume(resumeText, req.body.jobDescription);
 
-    // const newResume = new ResumeModel({
-    //   userId: req.body.userId, //will be replaced by req.user._id later on for auth middleware
-    //   resumeFile: uploadResult?.secure_url, //store Cloudinary URL
-    //   jobDescription: req.body.jobDescription,
-    //   analysis: analysis,
-    // });
-
-    // await newResume.save();
-
     res.status(201).json({
       userId: req.body.userId, //will be replaced by req.user._id later on for auth middleware
       resumeFile: uploadResult?.secure_url, //store Cloudinary URL
