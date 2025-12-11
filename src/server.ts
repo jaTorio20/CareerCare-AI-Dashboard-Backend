@@ -7,6 +7,7 @@ import testRoute from './routes/testRoute';
 import analyzeRoutes from './routes/analyzeRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
+import generateLetterRoutes from './routes/generateLetterRoutes';
 dotenv.config();
 
 const app = express();
@@ -29,6 +30,8 @@ app.use('/api/test', testRoute);
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);
+
+app.use('/api/cover-letter', generateLetterRoutes);
 
 //404 Fallback
 app.use((req, res, next) => {
