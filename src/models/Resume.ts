@@ -41,8 +41,6 @@ const ResumeSchema = new Schema({
 // Infer TypeScript type directly from schema
 export type Resume = InferSchemaType<typeof ResumeSchema>;
 
-// export type ResumeCreate = Omit<Resume, "createdAt" | "updatedAt">;
-
 // For updates, all fields are optional
 export type ResumeUpdate = Partial<Resume>;
 

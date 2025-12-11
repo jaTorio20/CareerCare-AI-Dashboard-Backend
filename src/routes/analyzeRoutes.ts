@@ -1,5 +1,4 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { ResumeModel} from '../models/Resume';
 import { uploadMiddleware } from '../middleware/uploadMiddleware';
 import {uploadToCloudinary} from '../services/cloudinaryService';
 import { parseFile } from '../services/fileService';
