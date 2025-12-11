@@ -6,6 +6,7 @@ import { errorHandler } from './middleware/errorHandler';
 import testRoute from './routes/testRoute';
 import analyzeRoutes from './routes/analyzeRoutes';
 import resumeRoutes from './routes/resumeRoutes';
+import tempRoutes from './routes/tempRoutes';
 dotenv.config();
 
 const app = express();
@@ -26,6 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/test', testRoute);
 app.use('/api/resumes', resumeRoutes);
+app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);
 
 //404 Fallback
