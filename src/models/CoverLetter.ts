@@ -13,7 +13,7 @@ const CoverLetterSchema = new Schema({
   },
   userDetails: { 
     type: String,
-    required: true,
+    required: false,
   },
   generatedLetter: { 
     type: String,

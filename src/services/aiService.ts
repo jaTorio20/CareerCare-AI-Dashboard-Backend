@@ -62,9 +62,17 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
 export async function generateCoverLetter(jobDescription: string, userDetails?: string) {
   type CoverLetterResponse = { generatedLetter: string };
     const model = client.getGenerativeModel({ model: `${process.env.GEMINI_MODEL}` });
-    const prompt = userDetails 
-    ? `You are a professional career assistant.
+const prompt = userDetails 
+  ? `You are a professional career assistant.
       Using the job description and my personal details, write a tailored cover letter for the job application.
+      At the very top of the cover letter, include my personal details block.
+      
+      - Each detail must be wrapped in its own <br> tag so TipTap renders them as separate lines.
+      - If a detail is missing, you may invent a professional placeholder (e.g., "linkedin.com/in/example") so the format looks complete.
+      - Email and phone MUST always be included. If not provided, use safe placeholders:
+        email@example.com
+        +63 XXX XXX XXXX
+      
       Job Description: ${jobDescription}
       My Details: ${userDetails}
 
@@ -75,8 +83,15 @@ export async function generateCoverLetter(jobDescription: string, userDetails?: 
       
       Do not include code fences, markdown, or any text outside the JSON.`
 
-    : `You are a professional career assistant.
+  : `You are a professional career assistant.
       Using the job description, write a tailored cover letter for the job application.
+      At the very top of the cover letter, invent a professional personal details block.
+      - Each detail must be wrapped in its own <br> tag so TipTap renders them as separate lines.
+      - Use realistic placeholders for missing fields (LinkedIn, GitHub, Portfolio, Date).
+      - Email and phone MUST always be included. If not provided, use safe placeholders:
+        email@example.com
+        +63 XXX XXX XXXX
+      
       Job Description: ${jobDescription}
 
       Return ONLY valid JSON with the following fields:
@@ -85,6 +100,7 @@ export async function generateCoverLetter(jobDescription: string, userDetails?: 
       }
 
       Do not include code fences, markdown, or any text outside the JSON.`;
+
 
   const result = await model.generateContent(prompt);
   let text = result.response.text();

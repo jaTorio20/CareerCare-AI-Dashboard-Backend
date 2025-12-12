@@ -85,7 +85,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // @route          PUT /api/cover-letter/:id
 // @description    update a specific cover letter by ID
 // @access         Public (private in future with auth middleware)
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/edit', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -146,9 +146,5 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     next(err);
   }
 });
-
-
-
-
 
 export default router;
