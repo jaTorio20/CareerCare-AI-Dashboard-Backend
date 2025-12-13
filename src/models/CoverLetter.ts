@@ -6,6 +6,14 @@ const CoverLetterSchema = new Schema({
     ref: "User",
     required: false // false for now, can be true if needed later
   },
+  jobTitle: {
+    type: String,
+    required: true
+  },
+  companyName: {
+    type: String,
+    required: true
+  },
   
   jobDescription: { 
     type: String,

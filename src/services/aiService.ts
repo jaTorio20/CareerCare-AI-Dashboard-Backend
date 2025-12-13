@@ -59,7 +59,7 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
 }
 
 
-export async function generateCoverLetter(jobDescription: string, userDetails?: string) {
+export async function generateCoverLetter(jobDescription: string, jobTitle: string, companyName: string, userDetails?: string) {
   type CoverLetterResponse = { generatedLetter: string };
     const model = client.getGenerativeModel({ model: `${process.env.GEMINI_MODEL}` });
     const prompt = userDetails 
@@ -73,8 +73,11 @@ export async function generateCoverLetter(jobDescription: string, userDetails?: 
             email@example.com
             +63 XXX XXX XXXX
           - Use realistic placeholders for other missing fields (e.g., "linkedin.com/in/example", "github.com/example", "portfolio.example.com").
+          - Personal Details and the Body should only use one <p> per line, to avoid over enter spacing.
 
           Job Description: ${jobDescription}
+          Job Company Name: ${companyName}
+          Job Position: ${jobTitle}
           My Details: ${userDetails}
 
           Return ONLY valid JSON with the following fields:
@@ -93,8 +96,12 @@ export async function generateCoverLetter(jobDescription: string, userDetails?: 
             email@example.com
             +63 XXX XXX XXXX
           - Use realistic placeholders for other missing fields (e.g., "linkedin.com/in/example", "github.com/example", "portfolio.example.com").
+          - Personal Details and the Body should only use one <p> per line, to avoid over enter spacing.
 
           Job Description: ${jobDescription}
+          Company Name: ${companyName}          
+          Job Position: ${jobTitle}
+
 
           Return ONLY valid JSON with the following fields:
           {

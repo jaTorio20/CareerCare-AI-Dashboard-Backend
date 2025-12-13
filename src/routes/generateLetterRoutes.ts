@@ -9,11 +9,11 @@ const router = expres.Router();
 // @access         Public (private in future with auth middleware)
 router.post('/generate', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { jobDescription, userDetails } = req.body || {};   
+    const { jobDescription, userDetails, jobTitle, companyName } = req.body || {};   
     if (!jobDescription) {
       return res.status(400).json({ error: "jobDescription is required" });
     }
-    const coverLetter = await generateCoverLetter(jobDescription, userDetails);
+    const coverLetter = await generateCoverLetter(jobDescription, userDetails, jobTitle, companyName);
     res.status(200).json(coverLetter);
   } catch (err) {
     next(err);
@@ -25,7 +25,7 @@ router.post('/generate', async (req: Request, res: Response, next: NextFunction)
 // @access         Public (private in future with auth middleware)
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try{
-  const {  userId, jobDescription, userDetails, generatedLetter, editedLetter } = req.body || {};
+  const {  userId, jobDescription, jobTitle, userDetails, companyName, generatedLetter, editedLetter } = req.body || {};
 
   if (!jobDescription || !generatedLetter) {
     return res.status(400).json({ error: 'jobDescription, and generatedLetter are required' });
@@ -33,6 +33,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const newCoverLetter = new CoverLetterModel({
     // userId, // later replace with req.user._id
     jobDescription,
+    jobTitle,
+    companyName,
     userDetails,
     generatedLetter,
     editedLetter
@@ -85,7 +87,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // @route          PUT /api/cover-letter/:id
 // @description    update a specific cover letter by ID
 // @access         Public (private in future with auth middleware)
-router.put('/:id/edit', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -106,8 +108,17 @@ router.put('/:id/edit', async (req: Request, res: Response, next: NextFunction) 
     //   throw new Error('Unauthorized to update this cover letter');
     // }
     
-    const {editedLetter } = req.body;
-      coverLetter.editedLetter = editedLetter
+    const {jobTitle, companyName, jobDescription, editedLetter } = req.body || {};
+   
+    if (!jobTitle?.trim() || !companyName?.trim() || !jobDescription ||  !editedLetter){
+      res.status(400);
+      throw new Error ('Title, summary and description are required')
+    }
+
+    coverLetter.jobTitle = jobTitle;
+    coverLetter.companyName = companyName;
+    coverLetter.jobDescription = jobDescription;
+    coverLetter.editedLetter = editedLetter;
 
     const updatedLetter = await coverLetter.save();
     res.status(200).json(updatedLetter); 
