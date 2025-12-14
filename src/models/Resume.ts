@@ -36,6 +36,7 @@ const ResumeSchema = new Schema({
       default: [] 
     },
   },
+  isTemp: { type: Boolean, default: true }
 }, { timestamps: true });
 
 // Infer TypeScript type directly from schema

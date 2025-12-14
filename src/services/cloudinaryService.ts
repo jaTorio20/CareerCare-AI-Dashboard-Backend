@@ -6,10 +6,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-export function uploadToCloudinary(fileBuffer: Buffer): Promise<any> {
+export function uploadToCloudinary(fileBuffer: Buffer, folderName = "resumes"): Promise<any> {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: "raw" }, // raw = for PDFs/DOCX
+      { 
+        resource_type: "raw", 
+        folder: folderName
+      }, // raw = for PDFs/DOCX
       (error, result) => {
         if (error) reject(error);
         else resolve(result);

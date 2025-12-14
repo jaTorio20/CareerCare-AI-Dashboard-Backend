@@ -10,7 +10,7 @@ import { v2 as cloudinary } from "cloudinary";
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
-    const { userId, resumeFile, publicId, jobDescription, analysis } = req.body;
+    const { userId, resumeFile, publicId, isTemp, jobDescription, analysis } = req.body;
 
     if (!resumeFile) {
       return res.status(400).json({ error: "resumeFile (Cloudinary URL) is required" });
@@ -19,7 +19,8 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     const newResume = new ResumeModel({
       // userId, // later replace with req.user._id
       resumeFile, // Cloudinary URL string
-      publicId,  
+      publicId,
+      isTemp,  
       jobDescription,
       analysis,
     });
@@ -37,7 +38,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // @access         Public (later protected by auth)
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await ResumeModel.find().sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
+    const data = await ResumeModel.find({ isTemp: false }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
     
     if (!data) {
       return res.status(404).json({ error: "No resumes found" });

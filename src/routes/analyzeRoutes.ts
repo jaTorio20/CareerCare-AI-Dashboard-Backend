@@ -3,6 +3,7 @@ import { uploadMiddleware } from '../middleware/uploadMiddleware';
 import {uploadToCloudinary} from '../services/cloudinaryService';
 import { parseFile } from '../services/fileService';
 import { analyzeResume } from '../services/aiService';
+import { ResumeModel } from '../models/Resume';
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ router.post("/", uploadMiddleware.single("resumeFile"),
     }
 
     // Upload to Cloudinary
-    const uploadResult = await uploadToCloudinary(req.file.buffer);
+    const uploadResult = await uploadToCloudinary(req.file.buffer, "resumes"); //resumes folder
 
     // Parse file
     const resumeText = await parseFile(req.file);
@@ -36,13 +37,18 @@ router.post("/", uploadMiddleware.single("resumeFile"),
     // Run AI analysis
     const analysis = await analyzeResume(resumeText, req.body.jobDescription);
 
-    res.status(201).json({
-      userId: req.body.userId, //will be replaced by req.user._id later on for auth middleware
-      resumeFile: uploadResult?.secure_url, //store Cloudinary URL
-      publicId: uploadResult?.public_id,
+      // Save TEMP record in DB
+    const tempResume = new ResumeModel({
+      userId: req.body.userId, // later replace with req.user._id
+      resumeFile: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
       jobDescription: req.body.jobDescription,
-      analysis: analysis,
+      analysis,
+      isTemp: true //mark as temporary
     });
+    await tempResume.save();
+
+    res.status(201).json(tempResume);
   } catch (err) {
     console.error("Failed to upload resume", err);
     next(err);
