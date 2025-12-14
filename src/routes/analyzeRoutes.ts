@@ -29,7 +29,7 @@ router.post("/", uploadMiddleware.single("resumeFile"),
     }
 
     // Upload to Cloudinary
-    const uploadResult = await uploadToCloudinary(req.file.buffer, "resumes"); //resumes folder
+    const uploadResult = await uploadToCloudinary(req.file.buffer, "resumes/temp"); //resumes folder
 
     // Parse file
     const resumeText = await parseFile(req.file);
@@ -42,13 +42,20 @@ router.post("/", uploadMiddleware.single("resumeFile"),
       userId: req.body.userId, // later replace with req.user._id
       resumeFile: uploadResult.secure_url,
       publicId: uploadResult.public_id,
+      originalName: req.file.originalname,
       jobDescription: req.body.jobDescription,
       analysis,
       isTemp: true //mark as temporary
     });
     await tempResume.save();
 
-    res.status(201).json(tempResume);
+    res.status(201).json({
+      resumeFile: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      originalName: req.file.originalname,
+      jobDescription: req.body.jobDescription,
+      analysis,  
+    });
   } catch (err) {
     console.error("Failed to upload resume", err);
     next(err);

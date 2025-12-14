@@ -8,6 +8,7 @@ import analyzeRoutes from './routes/analyzeRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
 import generateLetterRoutes from './routes/generateLetterRoutes';
+import jobApplicationRoutes from './routes/jobApplicationRoutes'
 
 //NODE CRON AUTO DELETE
 import cron from "node-cron";
@@ -62,6 +63,9 @@ app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);
 
 app.use('/api/cover-letter', generateLetterRoutes);
+
+app.use('/api/job-application', jobApplicationRoutes);
+
 
 //404 Fallback
 app.use((req, res, next) => {

@@ -17,6 +17,10 @@ const ResumeSchema = new Schema({
     type: String,
     required: false 
   },
+  originalName: {
+     type: String, 
+     required: true 
+  }, 
   analysis: {
     atsFriendly: { 
       type: Boolean,
@@ -42,7 +46,7 @@ const ResumeSchema = new Schema({
 // Infer TypeScript type directly from schema
 export type Resume = InferSchemaType<typeof ResumeSchema>;
 
-// For updates, all fields are optional
-export type ResumeUpdate = Partial<Resume>;
+// // For updates, all fields are optional
+// export type ResumeUpdate = Partial<Resume>;
 
 export const ResumeModel = mongoose.model<Resume>("Resume", ResumeSchema);

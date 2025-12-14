@@ -1,6 +1,11 @@
 import mongoose, {InferSchemaType, Schema} from "mongoose";
 
 const JobApplicationSchema = new Schema({
+  userId: { 
+    type: Schema.Types.ObjectId, 
+    ref: "User", 
+    required: false 
+  },
   companyName: {
     type: String, 
     required: true 
@@ -9,22 +14,35 @@ const JobApplicationSchema = new Schema({
     type: String, 
     required: true 
   },
+  jobLink: { 
+    type: String 
+  },
   status: { 
     type: String, 
-    enum: ['applied','interview','offer','rejected','accepted'], 
+    enum: ['applied', 'interview', 'offer', 'rejected', 'accepted'], 
     default: 'applied' 
   },
+  location: { 
+    type: String,
+    enum: ['remote', 'onsite', 'hybrid'],
+    default: 'remote',
+  },
+  notes: {
+    type: String 
+  },
+  salaryRange: {
+    type: String 
+  },
+
   resumeFile: { 
     type: String, 
-    required: true 
+    required: false 
   },     // Cloudinary URL or file path
-  resumePublicId: { 
+  publicId: { 
     type: String, 
-    required: true 
+    required: false 
   }, // Cloudinary publicId
-  notes: {
-     type: String 
-  },
+
 }, { timestamps: true });
 
 export type JobApplication = InferSchemaType<typeof JobApplicationSchema>;

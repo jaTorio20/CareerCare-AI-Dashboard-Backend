@@ -10,19 +10,30 @@ import { v2 as cloudinary } from "cloudinary";
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
-    const { userId, resumeFile, publicId, isTemp, jobDescription, analysis } = req.body;
+    const { userId, resumeFile, publicId, isTemp, originalName, jobDescription, analysis } = req.body;
 
-    if (!resumeFile) {
-      return res.status(400).json({ error: "resumeFile (Cloudinary URL) is required" });
-    }
+    // if (!resumeFile) {
+    //   return res.status(400).json({ error: "resumeFile (Cloudinary URL) is required" });
+    // }
 
+    // Generate a new permanent publicId
+    const newPublicId = `resumes/${Date.now()}_${originalName}`;
+
+    // Rename/move the file in Cloudinary
+    const renameResult = await cloudinary.uploader.rename(publicId, newPublicId, {
+      resource_type: "raw",
+      overwrite: false, // prevent accidental overwrite
+    });
+
+    // Save permanent record in DB
     const newResume = new ResumeModel({
-      // userId, // later replace with req.user._id
-      resumeFile, // Cloudinary URL string
-      publicId,
-      isTemp,  
+      userId,
+      resumeFile: renameResult.secure_url, // permanent link
+      publicId: renameResult.public_id,    // permanent ID
+      originalName,
       jobDescription,
       analysis,
+      isTemp: false,
     });
 
     await newResume.save();

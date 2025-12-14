@@ -1,9 +1,9 @@
-import expres, {  Request, Response, NextFunction } from 'express';
+import express, {  Request, Response, NextFunction } from 'express';
 import { generateCoverLetter } from '../services/aiService';
 import { CoverLetterModel } from '../models/CoverLetter';
 import mongoose from 'mongoose';
 
-const router = expres.Router();
+const router = express.Router();
 // @route          POST /api/cover-letter/generate
 // @description    Generate a cover letter based on job description and optional user details
 // @access         Public (private in future with auth middleware)
