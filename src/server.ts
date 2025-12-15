@@ -8,7 +8,7 @@ import analyzeRoutes from './routes/analyzeRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
 import generateLetterRoutes from './routes/generateLetterRoutes';
-import jobApplicationRoutes from './routes/jobApplicationRoutes'
+import jobApplicationRoutes from './routes/jobApplication/jobApplicationRoutes'
 
 //NODE CRON AUTO DELETE
 import cron from "node-cron";
@@ -16,7 +16,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { ResumeModel } from './models/Resume';
 
 // Run every hour
-cron.schedule("0 0 * * *", async () => {
+ cron.schedule("0 0 * * *", async () => {
   try {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
 
@@ -51,7 +51,8 @@ connectDB();
 // CORS Configuration
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS || `http://localhost:3000`, // Adjust as needed
-  credentials: true //for allowing to send header value
+  credentials: true, //for allowing to send header value
+  exposedHeaders: ["Content-Disposition"],
 }));
 
 app.use(express.json());

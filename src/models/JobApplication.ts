@@ -33,7 +33,11 @@ const JobApplicationSchema = new Schema({
   salaryRange: {
     type: String 
   },
-
+  
+  originalName:{
+    type: String,
+    required: false,
+  },
   resumeFile: { 
     type: String, 
     required: false 
