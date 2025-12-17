@@ -38,7 +38,6 @@ export function uploadToCloudinaryJobApplication(
         folder: folderName,
         use_filename: true,
         unique_filename: false,
-        type: "upload", 
         public_id: `${uniqueId}_${Date.now()}_${originalName}`
       },
       (error, result) => {

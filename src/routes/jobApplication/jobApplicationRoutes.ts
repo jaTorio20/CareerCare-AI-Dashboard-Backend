@@ -38,28 +38,38 @@ router.post('/', uploadMiddleware.single("resumeFile"), async (req: Request, res
   const { userId, companyName, jobTitle, 
     jobLink, status, location, notes, salaryRange} = req.body || {};
 
-    // if (!req.body.userId || !req.file) {
-    if (!req.file) {
-      return res.status(400).json({ error: "userId and resumeFile are required" });
+    // if (!req.body.userId) {
+ 
+    if (!companyName && !jobTitle){
+      return res.status(400).json({ error: "companyName and jobTitle are required" });
     }
 
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ];
+    let resumeFile: string | undefined;
+    let publicId: string | undefined;
+    let originalName: string | undefined;
 
-    if (!allowedTypes.includes(req.file.mimetype)) {
-      return res.status(400).json({ error: "Unsupported file type" });
+    if (req.file){
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ];
+
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: "Unsupported file type" });
+      }
+            // Upload to Cloudinary only if file exists
+      const uploadResult = await uploadToCloudinaryJobApplication(
+        req.file.buffer,
+        req.file.originalname,
+        "resumes/jobApplication"
+      );
+
+      resumeFile = uploadResult.secure_url;
+      publicId = uploadResult.public_id;
+      originalName = req.file.originalname;
     }
 
-    // Upload to Cloudinary
-  const uploadResult = await uploadToCloudinaryJobApplication(
-    req.file.buffer,
-    req.file.originalname,
-    "resumes/jobApplication"
-    
-    ); //resumes folder
   
   const jobApplication = new JobApplicationModel({
       // userId, // later replace with req.user._id
@@ -70,9 +80,9 @@ router.post('/', uploadMiddleware.single("resumeFile"), async (req: Request, res
       location,
       notes,
       salaryRange,
-      originalName: req.file.originalname,
-      resumeFile: uploadResult.secure_url,
-      publicId: uploadResult.public_id
+      originalName,
+      resumeFile: resumeFile,
+      publicId,
   });
 
   await jobApplication.save();
@@ -139,7 +149,7 @@ router.delete("/:id", async (req: Request, res: Response, next: NextFunction) =>
 // @route          UPDATE /api/job-application/:id   
 // @description    update a specific job application by ID
 // @access         Public (private in future with auth middleware)
-router.put('/:id', async(req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', uploadMiddleware.single("resumeFile"), async(req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
   
@@ -161,8 +171,7 @@ router.put('/:id', async(req: Request, res: Response, next: NextFunction) => {
       // }
       
       const {companyName, jobTitle, 
-            jobLink, status, location, notes, salaryRange,
-            resumeFile, resumePublicId } = req.body || {};
+            jobLink, status, location, notes, salaryRange} = req.body || {};
             
       if (!jobTitle?.trim() || !companyName?.trim() ){
         res.status(400);
@@ -176,12 +185,30 @@ router.put('/:id', async(req: Request, res: Response, next: NextFunction) => {
       jobApplication.location = location;
       jobApplication.notes = notes;
       jobApplication.salaryRange = salaryRange;
-      jobApplication.resumeFile = resumeFile;
-      jobApplication.publicId = resumePublicId;
   
+    // Handle resume update if a new file is uploaded
+      if (req.file) {
+        // Delete old file if exists
+        if (jobApplication.publicId) {
+          await cloudinary.uploader.destroy(jobApplication.publicId, {
+            resource_type: "raw",
+          });
+        }
+
+        // Upload new file to Cloudinary
+        const uploadResult = await uploadToCloudinaryJobApplication(
+          req.file.buffer,
+          req.file.originalname,
+          "resumes/jobApplication"
+        );
+
+        jobApplication.resumeFile = uploadResult.secure_url;
+        jobApplication.publicId = uploadResult.public_id;
+        jobApplication.originalName = req.file.originalname;
+      }
+
       const updatedJobApplication = await jobApplication.save();
-      res.status(200).json(updatedJobApplication); 
-    
+      res.status(200).json(updatedJobApplication);
     } catch (err) {
       next(err);
     }   
@@ -190,29 +217,81 @@ router.put('/:id', async(req: Request, res: Response, next: NextFunction) => {
 // @route          GET /api/job-application/:id/download
 // @description    Download resume file with original filename
 // @access         Protected (later with auth)
-router.get('/:id/download', async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id/download", async (req: Request, res: Response, next: NextFunction) => {
   try {
-  const jobApplication = await JobApplicationModel.findById(req.params.id);
-  if (!jobApplication) {
-    return res.status(404).json({ error: "Application not found" });
-  }
+    const jobApplication = await JobApplicationModel.findById(req.params.id);
+    if (!jobApplication) {
+      return res.status(404).json({ error: "Resume not found" });
+    }
 
-  // Force browser to use original filename
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${jobApplication.originalName}"`
-  );
+    if (!jobApplication.resumeFile) {
+      return res.status(404).json({ error: "Resume file not found" });
+    }
 
-  if (!jobApplication.resumeFile) {
-    return res.status(404).json({ error: "Resume file not found" });
-  }
+    // Force browser to use original filename
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${jobApplication.originalName}"`
+    );
 
-  // Stream file from Cloudinary
-  res.redirect(jobApplication.resumeFile);     
+    // Stream Cloudinary file to client
+    const response = await axios.get(jobApplication.resumeFile, { responseType: "stream" });
+    response.data.pipe(res);
   } catch (err) {
-    
+    console.error("Failed to download resume", err);
+    res.status(500).json({ error: "Server error while downloading resume" });
+    next(err);
   }
 });
+
+// // @route GET /api/job-application/:id/resume
+// // @desc  Stream resume PDF for inline preview
+// router.get("/:id/resume", async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const jobApplication = await JobApplicationModel.findById(req.params.id);
+//     if (!jobApplication || !jobApplication.resumeFile) {
+//       return res.status(404).json({ error: "Resume not found" });
+//     }
+
+//     // Fetch PDF from Cloudinary
+//     const response = await axios.get(jobApplication.resumeFile, { responseType: "arraybuffer" });
+
+//     //  headers for inline preview
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", "inline");
+//     res.setHeader("Access-Control-Allow-Origin", "*");
+
+//     res.send(Buffer.from(response.data));
+//   } catch (err) {
+//     console.error("Failed to stream resume", err);
+//     res.status(500).json({ error: "Server error while streaming resume" });
+//     next(err);
+//   }
+// });
+
+// router.get("/:id/resume-url", async (req, res) => {
+//   try {
+//     const jobApplication = await JobApplicationModel.findById(req.params.id);
+//     if (!jobApplication?.publicId) {
+//       return res.status(404).json({ error: "Resume not found" });
+//     }
+
+//     // Generate signed URL for the PDF
+//     const signedUrl = cloudinary.url(jobApplication.publicId, {
+//       resource_type: "raw",
+//       type: "authenticated",
+//       secure: true,
+//       sign_url: true,
+//       expires_at: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiry
+//     });
+
+//     res.json({ url: signedUrl });
+//   } catch (err) {
+//     console.error("Error generating signed URL:", err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
 
 
 export default router;

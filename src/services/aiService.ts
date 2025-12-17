@@ -28,7 +28,8 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
        Return ONLY valid JSON with the following fields:
        {
          "atsFriendly": boolean,
-         "atsSuggestions": string[]
+         "atsSuggestions": string[],
+          "jobFitPercentage": number
        }
 
        Do not include code fences, markdown, or any text outside the JSON.`;

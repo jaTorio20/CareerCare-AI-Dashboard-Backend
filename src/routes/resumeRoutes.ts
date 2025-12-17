@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 // @route          GET /api/resumes/:id/download
 // @description    Download resume file with original filename
 // @access         Public (later protected by auth)
-router.get("/:id/download", async (req: Request, res: Response) => {
+router.get("/:id/download", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resume = await ResumeModel.findById(req.params.id);
     if (!resume) {
@@ -31,6 +31,7 @@ router.get("/:id/download", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Failed to download resume", err);
     res.status(500).json({ error: "Server error while downloading resume" });
+    next(err);
   }
 });
 
