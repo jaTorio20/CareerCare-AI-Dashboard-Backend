@@ -9,7 +9,9 @@ import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
 import generateLetterRoutes from './routes/generateLetterRoutes';
 import jobApplicationRoutes from './routes/jobApplication/jobApplicationRoutes'
+import authRoutes from './routes/authRoutes'
 
+import cookieParser from "cookie-parser";
 //NODE CRON AUTO DELETE
 import cron from "node-cron";
 import { v2 as cloudinary } from "cloudinary";
@@ -47,7 +49,7 @@ const PORT = process.env.PORT || 5000;
 // Connect to the database
 connectDB();
 
-
+app.use(cookieParser());
 // CORS Configuration
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS || `http://localhost:3000`, // Adjust as needed
@@ -59,6 +61,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/test', testRoute);
+app.use('/api/auth', authRoutes);
+
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);

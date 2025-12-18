@@ -5,37 +5,15 @@ import { v2 as cloudinary} from 'cloudinary'
 import {uploadToCloudinaryJobApplication} from '../../services/cloudinaryService';
 import { uploadMiddleware } from '../../middleware/uploadMiddleware';
 import axios from "axios";
+import { protect } from '../../middleware/authMiddleware';
 
 const router = express.Router();
-
-// @route          GET /api/job-application/:id/download
-// @description    Download resume file with original filename
-router.get('/:id/download', async (req: Request, res: Response) => {
-  const jobApplication = await JobApplicationModel.findById(req.params.id);
-  if (!jobApplication) {
-    return res.status(404).json({ error: "Application not found" });
-  }
-
-  if (!jobApplication.resumeFile) {
-    return res.status(404).json({ error: "Resume file not found" });
-  }
-
-  // Force browser to use original filename
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${jobApplication.originalName}"`
-  );
-
-  // Stream file from Cloudinary to client
-  const response = await axios.get(jobApplication.resumeFile, { responseType: "stream" });
-  response.data.pipe(res);
-});
 
 // @route          POST /api/job-application
 // @description    CREATE a new application entry (saved as card)
 // @access         Public (later protected by auth)
-router.post('/', uploadMiddleware.single("resumeFile"), async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, companyName, jobTitle, 
+router.post('/', protect, uploadMiddleware.single("resumeFile"), async (req: Request, res: Response, next: NextFunction) => {
+  const { companyName, jobTitle, 
     jobLink, status, location, notes, salaryRange} = req.body || {};
 
     // if (!req.body.userId) {
@@ -72,7 +50,7 @@ router.post('/', uploadMiddleware.single("resumeFile"), async (req: Request, res
 
   
   const jobApplication = new JobApplicationModel({
-      // userId, // later replace with req.user._id
+      userId: req.user._id,
       companyName,
       jobTitle,
       jobLink,
@@ -92,7 +70,7 @@ router.post('/', uploadMiddleware.single("resumeFile"), async (req: Request, res
 // @route          POST /api/job-application
 // @description    CREATE a new application entry (saved as card)
 // @access         Public (later protected by auth)
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await JobApplicationModel.find().sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
     
@@ -109,7 +87,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // @route          POST /api/job-application/:id
 // @description    CREATE a new application entry (saved as card)
 // @access         Public (later protected by auth)
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const application = await JobApplicationModel.findById(req.params.id); 
     if (!application) {
@@ -125,12 +103,26 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // @route          DELETE /api/job-application/:id   
 // @description    delete a specific job application by ID
 // @access         Public (private in future with auth middleware)
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const jobApplication = await JobApplicationModel.findByIdAndDelete(req.params.id);
-    if (!jobApplication) {
-      return res.status(404).json({ error: "Job Application Not Found" });
-    } 
+
+    const { id } = req.params;
+    if(!mongoose.Types.ObjectId.isValid(id)){ //if certain length in ID is missing will result idea not found
+      res.status(404);
+      throw new Error('Application Not Found')      
+    }
+
+    const jobApplication = await JobApplicationModel.findById(id);
+    if(!jobApplication){
+      res.status(404);
+      throw new Error('Job application not found');
+    }
+
+    // Check if user owns Job Application
+    if(jobApplication.userId.toString() !== req.user._id.toString()){
+      res.status(403);
+      throw new Error('Not authorized to delete this Job Application')
+    };
 
     // Delete file from Cloudinary if publicId is stored
     if (jobApplication.publicId) {
@@ -138,7 +130,7 @@ router.delete("/:id", async (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Delete document from MongoDB
-    await JobApplicationModel.findByIdAndDelete(req.params.id);
+    await jobApplication.deleteOne();
 
     res.status(200).json({ message: "Job Application deleted successfully" });
   } catch (err) {
@@ -149,7 +141,7 @@ router.delete("/:id", async (req: Request, res: Response, next: NextFunction) =>
 // @route          UPDATE /api/job-application/:id   
 // @description    update a specific job application by ID
 // @access         Public (private in future with auth middleware)
-router.put('/:id', uploadMiddleware.single("resumeFile"), async(req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
   
@@ -165,10 +157,10 @@ router.put('/:id', uploadMiddleware.single("resumeFile"), async(req: Request, re
       }
   
       // Check if user owns the cover letter (to be implemented with auth middleware later)
-      // if (coverLetter.userId && coverLetter.userId.toString() !== req.body.userId) {
-      //   res.status(403);
-      //   throw new Error('Unauthorized to update this cover letter');
-      // }
+      if (jobApplication.userId && jobApplication.userId.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Unauthorized to update this Job Application');
+      }
       
       const {companyName, jobTitle, 
             jobLink, status, location, notes, salaryRange} = req.body || {};
@@ -217,7 +209,7 @@ router.put('/:id', uploadMiddleware.single("resumeFile"), async(req: Request, re
 // @route          GET /api/job-application/:id/download
 // @description    Download resume file with original filename
 // @access         Protected (later with auth)
-router.get("/:id/download", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const jobApplication = await JobApplicationModel.findById(req.params.id);
     if (!jobApplication) {
@@ -226,6 +218,12 @@ router.get("/:id/download", async (req: Request, res: Response, next: NextFuncti
 
     if (!jobApplication.resumeFile) {
       return res.status(404).json({ error: "Resume file not found" });
+    }
+
+    // Ownership check
+    if (jobApplication.userId.toString() !== req.user._id.toString() ) {
+      res.status(403);
+      throw new Error("Not authorized to download this resume");
     }
 
     // Force browser to use original filename
@@ -244,53 +242,6 @@ router.get("/:id/download", async (req: Request, res: Response, next: NextFuncti
   }
 });
 
-// // @route GET /api/job-application/:id/resume
-// // @desc  Stream resume PDF for inline preview
-// router.get("/:id/resume", async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const jobApplication = await JobApplicationModel.findById(req.params.id);
-//     if (!jobApplication || !jobApplication.resumeFile) {
-//       return res.status(404).json({ error: "Resume not found" });
-//     }
-
-//     // Fetch PDF from Cloudinary
-//     const response = await axios.get(jobApplication.resumeFile, { responseType: "arraybuffer" });
-
-//     //  headers for inline preview
-//     res.setHeader("Content-Type", "application/pdf");
-//     res.setHeader("Content-Disposition", "inline");
-//     res.setHeader("Access-Control-Allow-Origin", "*");
-
-//     res.send(Buffer.from(response.data));
-//   } catch (err) {
-//     console.error("Failed to stream resume", err);
-//     res.status(500).json({ error: "Server error while streaming resume" });
-//     next(err);
-//   }
-// });
-
-// router.get("/:id/resume-url", async (req, res) => {
-//   try {
-//     const jobApplication = await JobApplicationModel.findById(req.params.id);
-//     if (!jobApplication?.publicId) {
-//       return res.status(404).json({ error: "Resume not found" });
-//     }
-
-//     // Generate signed URL for the PDF
-//     const signedUrl = cloudinary.url(jobApplication.publicId, {
-//       resource_type: "raw",
-//       type: "authenticated",
-//       secure: true,
-//       sign_url: true,
-//       expires_at: Math.floor(Date.now() / 1000) + 3600 // 1 hour expiry
-//     });
-
-//     res.json({ url: signedUrl });
-//   } catch (err) {
-//     console.error("Error generating signed URL:", err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
 
 
 

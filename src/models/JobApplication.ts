@@ -4,7 +4,7 @@ const JobApplicationSchema = new Schema({
   userId: { 
     type: Schema.Types.ObjectId, 
     ref: "User", 
-    required: false 
+    required: true, 
   },
   companyName: {
     type: String, 

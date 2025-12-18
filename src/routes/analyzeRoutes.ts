@@ -4,13 +4,14 @@ import {uploadToCloudinary} from '../services/cloudinaryService';
 import { parseFile } from '../services/fileService';
 import { analyzeResume } from '../services/aiService';
 import { ResumeModel } from '../models/Resume';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 // @route          POST /api/resumes/analyze
 // @desccription   CREATE and analyze a resume WITHOUT saving to DB
 // @access          Public
-router.post("/", uploadMiddleware.single("resumeFile"),
+router.post("/", protect, uploadMiddleware.single("resumeFile"),
  async (req: Request, res: Response, next: NextFunction) => {
   try {
     // if (!req.body.userId || !req.file) {

@@ -4,7 +4,7 @@ const CoverLetterSchema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: "User",
-    required: false // false for now, can be true if needed later
+    required: true // false for now, can be true if needed later
   },
   jobTitle: {
     type: String,

@@ -4,11 +4,13 @@ const router = express.Router();
 import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
+import { protect } from "../middleware/authMiddleware";
+import mongoose from "mongoose";
 
 // @route          GET /api/resumes/:id/download
 // @description    Download resume file with original filename
-// @access         Public (later protected by auth)
-router.get("/:id/download", async (req: Request, res: Response, next: NextFunction) => {
+// @access         Private
+router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resume = await ResumeModel.findById(req.params.id);
     if (!resume) {
@@ -38,11 +40,11 @@ router.get("/:id/download", async (req: Request, res: Response, next: NextFuncti
 
 // @route          POST /api/resumes
 // @description    CREATE a new resume entry (saved as card)
-// @access         Public (later protected by auth)
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+// @access         Private
+router.post("/", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
-    const { userId, resumeFile, publicId, isTemp, originalName, jobDescription, analysis } = req.body;
+    const { publicId, originalName, jobDescription, analysis } = req.body;
 
     // if (!resumeFile) {
     //   return res.status(400).json({ error: "resumeFile (Cloudinary URL) is required" });
@@ -59,7 +61,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 
     // Save permanent record in DB
     const newResume = new ResumeModel({
-      userId,
+      userId: req.user._id,
       resumeFile: renameResult.secure_url, // permanent link
       publicId: renameResult.public_id,    // permanent ID
       originalName,
@@ -79,7 +81,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
 // @route          GET /api/resumes
 // @description    fetch all resumes for a user
 // @access         Public (later protected by auth)
-router.get("/", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await ResumeModel.find({ isTemp: false }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
     
@@ -93,7 +95,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.get("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resume = await ResumeModel.findById(req.params.id); 
     if (!resume) {
@@ -107,25 +109,33 @@ router.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
 
 });
 
-router.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const resume = await ResumeModel.findByIdAndDelete(req.params.id);
-    if (!resume) {
-      return res.status(404).json({ error: "Resume not found" });
-    } 
-
-    // Delete file from Cloudinary if publicId is stored
-    if (resume.publicId) {
-      await cloudinary.uploader.destroy(resume.publicId, { resource_type: "raw" });
+    const { id } = req.params;
+    if(!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400);
+      throw new Error('Invalid cover letter ID');
     }
 
-    // Delete document from MongoDB
-    await ResumeModel.findByIdAndDelete(req.params.id);
+    const resume = await ResumeModel.findById(id);
+    if (!resume) {
+      res.status(404);
+      throw new Error('Cover letter not found');
+    }
 
-    res.status(200).json({ message: "Resume deleted successfully" });
-  } catch (err) {
+    // Check if user owns the Resume
+    if (resume.userId && resume.userId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Unauthorized to delete this cover letter');
+    }
+
+    await resume.deleteOne();
+    res.status(200).json({ message: 'Cover letter deleted successfully' });
+  } catch (err) {   
     next(err);
   }
 });
+
+
 
 export default router;
