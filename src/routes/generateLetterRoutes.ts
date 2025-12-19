@@ -55,7 +55,6 @@ router.post('/', protect, async (req: Request, res: Response, next: NextFunction
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const letters = await CoverLetterModel.find({
-      _id: req.params.id,
       userId: req.user._id,
     }).sort({ createdAt: -1 }); // userId: req.user._id later for auth
     res.status(200).json(letters);

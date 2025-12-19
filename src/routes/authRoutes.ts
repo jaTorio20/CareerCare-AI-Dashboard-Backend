@@ -36,7 +36,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     // Create Tokens
     const payload = { userId: user._id.toString() };
     //accessToken return or response with frontend
-    const accessToken = await generateToken(payload, '1m'); // set user id to generateToken and set to 1 minute
+    const accessToken = await generateToken(payload, '15m'); // set user id to generateToken and set to 15 minutes
     const refreshToken = await generateToken(payload, '30d'); //refresh token stored in httponlyCookie
 
     // Set refresh token in HTTP-Only cookie
@@ -93,7 +93,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     // Create Tokens
     const payload = { userId: user._id.toString() };
     //accessToken return or response with frontend
-    const accessToken = await generateToken(payload, '1m'); // set user id to generateToken and set to 1 minute
+    const accessToken = await generateToken(payload, '15m'); // set user id to generateToken and set to 15 minutes
     const refreshToken = await generateToken(payload, '30d'); //refresh token stored in httponlyCookie
 
     // Set refresh token in HTTP-Only cookie
@@ -156,7 +156,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       throw new Error('No user');
     }
 
-    const newAccessToken = await generateToken({userId: user._id.toString()}, '1m');
+    const newAccessToken = await generateToken({userId: user._id.toString()}, '15m');
 
     res.json({
       accessToken: newAccessToken,
