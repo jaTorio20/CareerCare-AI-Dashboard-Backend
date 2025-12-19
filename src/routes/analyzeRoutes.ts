@@ -40,7 +40,7 @@ router.post("/", protect, uploadMiddleware.single("resumeFile"),
 
       // Save TEMP record in DB
     const tempResume = new ResumeModel({
-      userId: req.body.userId, // later replace with req.user._id
+      userId: req.user._id, // later replace with req.user._id
       resumeFile: uploadResult.secure_url,
       publicId: uploadResult.public_id,
       originalName: req.file.originalname,

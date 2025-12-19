@@ -72,7 +72,9 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"), async (req: Req
 // @access         Public (later protected by auth)
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await JobApplicationModel.find().sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
+    const data = await JobApplicationModel.find({
+      userId: req.user._id, 
+    }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
     
     if (!data) {
       return res.status(404).json({ error: "No Applications found" });
@@ -89,7 +91,10 @@ router.get('/', protect, async (req: Request, res: Response, next: NextFunction)
 // @access         Public (later protected by auth)
 router.get('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const application = await JobApplicationModel.findById(req.params.id); 
+    const application = await JobApplicationModel.findById({
+      _id: req.params.id,
+      userId: req.user._id,
+    }); 
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
     }

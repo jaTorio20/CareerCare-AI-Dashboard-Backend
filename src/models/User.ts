@@ -21,16 +21,26 @@ const userSchema = new Schema({
     minlength: 6,
     // select: false
   },
-  resetPasswordToken: {
-    type: String,
-    // index: true
-  },
-  resetPasswordExpires: Date,
   name: {
     type: String,
     required: true,
     trim: true
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true // allows multiple nulls (not all users have Google)
+  },
+  avatar: {
+    url: String,
+    filename: String
+  },
+  resetPasswordToken: {
+    type: String,
+    // index: true
+  },
+  resetPasswordExpires: Date,
+
   role: {
     type: String,
     enum: ['user', 'admin'],

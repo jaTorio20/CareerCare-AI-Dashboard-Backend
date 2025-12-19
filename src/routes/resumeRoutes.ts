@@ -12,7 +12,10 @@ import mongoose from "mongoose";
 // @access         Private
 router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const resume = await ResumeModel.findById(req.params.id);
+    const resume = await ResumeModel.findById({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
     if (!resume) {
       return res.status(404).json({ error: "Resume not found" });
     }
@@ -46,9 +49,9 @@ router.post("/", protect, async (req: Request, res: Response, next: NextFunction
     // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
     const { publicId, originalName, jobDescription, analysis } = req.body;
 
-    // if (!resumeFile) {
-    //   return res.status(400).json({ error: "resumeFile (Cloudinary URL) is required" });
-    // }
+    if (!publicId || !originalName) {
+      return res.status(400).json({ error: "resumeFile (Cloudinary publicId + originalName) is required" });
+    }
     const uniqueId = uuidv4();
     // Generate a new permanent publicId
     const newPublicId = `resumes/${uniqueId}_${Date.now()}_${originalName}`;
@@ -80,10 +83,13 @@ router.post("/", protect, async (req: Request, res: Response, next: NextFunction
 
 // @route          GET /api/resumes
 // @description    fetch all resumes for a user
-// @access         Public (later protected by auth)
+// @access          Private
 router.get("/", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await ResumeModel.find({ isTemp: false }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
+    const data = await ResumeModel.find({
+      userId: req.user._id, 
+      isTemp: false
+       }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
     
     if (!data) {
       return res.status(404).json({ error: "No resumes found" });
@@ -97,7 +103,10 @@ router.get("/", protect, async (req: Request, res: Response, next: NextFunction)
 
 router.get("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const resume = await ResumeModel.findById(req.params.id); 
+    const resume = await ResumeModel.findById({
+      _id: req.params.id,
+      userId: req.user._id,
+    }); 
     if (!resume) {
       return res.status(404).json({ error: "Resume not found" });
     }
@@ -114,23 +123,28 @@ router.delete("/:id", protect, async (req: Request, res: Response, next: NextFun
     const { id } = req.params;
     if(!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400);
-      throw new Error('Invalid cover letter ID');
+      throw new Error('Invalid Resume ID');
     }
 
     const resume = await ResumeModel.findById(id);
     if (!resume) {
       res.status(404);
-      throw new Error('Cover letter not found');
+      throw new Error('Resume not found');
+    }
+
+    // Delete file from Cloudinary if publicId is stored
+    if (resume.publicId) {
+      await cloudinary.uploader.destroy(resume.publicId, { resource_type: "raw" });
     }
 
     // Check if user owns the Resume
     if (resume.userId && resume.userId.toString() !== req.user._id.toString()) {
       res.status(403);
-      throw new Error('Unauthorized to delete this cover letter');
+      throw new Error('Unauthorized to delete this resume');
     }
 
     await resume.deleteOne();
-    res.status(200).json({ message: 'Cover letter deleted successfully' });
+    res.status(200).json({ message: 'resume deleted successfully' });
   } catch (err) {   
     next(err);
   }

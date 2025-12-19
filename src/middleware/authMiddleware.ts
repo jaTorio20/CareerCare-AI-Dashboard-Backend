@@ -14,8 +14,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const token = authHeader.split(' ')[1];
+    // since it's an accesToken, it extracts the token to get the userId
     const { payload } = await jwtVerify(token, JWT_SECRET);
-
+    //it finds the userId by here
     const user = await User.findById(payload.userId).select('_id name email role');
 
     if(!user){

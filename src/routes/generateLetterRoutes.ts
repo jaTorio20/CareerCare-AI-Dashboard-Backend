@@ -54,7 +54,10 @@ router.post('/', protect, async (req: Request, res: Response, next: NextFunction
 // @access         Public (private in future with auth middleware)
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const letters = await CoverLetterModel.find().sort({ createdAt: -1 }); // userId: req.user._id later for auth
+    const letters = await CoverLetterModel.find({
+      _id: req.params.id,
+      userId: req.user._id,
+    }).sort({ createdAt: -1 }); // userId: req.user._id later for auth
     res.status(200).json(letters);
   } catch (err) {
     next(err);
@@ -74,7 +77,10 @@ router.get('/:id', protect, async (req: Request, res: Response, next: NextFuncti
       throw new Error('Invalid cover letter ID');
     }
 
-    const coverLetter = await CoverLetterModel.findById(id);
+    const coverLetter = await CoverLetterModel.findById({
+      _id: id,
+      userId: req.user._id,
+    });
     if (!coverLetter) {
       res.status(404);
       throw new Error('Cover letter not found');
