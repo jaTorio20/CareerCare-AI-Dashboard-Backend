@@ -10,6 +10,10 @@ const router = express.Router();
 // @access         Private
 router.post('/generate', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { jobDescription, userDetails, jobTitle, companyName } = req.body || {};   
     if (!jobDescription) {
       return res.status(400).json({ error: "jobDescription is required" });
@@ -27,6 +31,10 @@ router.post('/generate', protect, async (req: Request, res: Response, next: Next
 // @access         Private
 router.post('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try{
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   const {jobDescription, jobTitle, userDetails, companyName, generatedLetter, editedLetter } = req.body || {};
 
   if (!jobDescription || !generatedLetter) {
@@ -54,6 +62,10 @@ router.post('/', protect, async (req: Request, res: Response, next: NextFunction
 // @access         Public (private in future with auth middleware)
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const letters = await CoverLetterModel.find({
       userId: req.user._id,
     }).sort({ createdAt: -1 }); // userId: req.user._id later for auth
@@ -69,6 +81,10 @@ router.get('/', protect, async (req: Request, res: Response, next: NextFunction)
 // @access         Public (private in future with auth middleware)
 router.get('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { id } = req.params;
 
     if(!mongoose.Types.ObjectId.isValid(id)) {
@@ -96,6 +112,10 @@ router.get('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @access         Private
 router.put('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { id } = req.params;
 
     if(!mongoose.Types.ObjectId.isValid(id)) {
@@ -140,6 +160,10 @@ router.put('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @access         Private
 router.delete('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {      
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { id } = req.params;
     if(!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400);

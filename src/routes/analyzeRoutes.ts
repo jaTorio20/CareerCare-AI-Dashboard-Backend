@@ -14,7 +14,10 @@ const router = express.Router();
 router.post("/", protect, uploadMiddleware.single("resumeFile"),
  async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // if (!req.body.userId || !req.file) {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
     if (!req.file) {
       return res.status(400).json({ error: "userId and resumeFile are required" });
     }

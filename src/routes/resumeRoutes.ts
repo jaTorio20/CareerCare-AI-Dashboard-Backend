@@ -12,7 +12,11 @@ import mongoose from "mongoose";
 // @access         Private
 router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const resume = await ResumeModel.findById({
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const resume = await ResumeModel.findOne({
       _id: req.params.id,
       userId: req.user._id,
     });
@@ -46,6 +50,9 @@ router.get("/:id/download", protect, async (req: Request, res: Response, next: N
 // @access         Private
 router.post("/", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
     const { publicId, originalName, jobDescription, analysis } = req.body;
 
@@ -86,6 +93,9 @@ router.post("/", protect, async (req: Request, res: Response, next: NextFunction
 // @access          Private
 router.get("/", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const data = await ResumeModel.find({
       userId: req.user._id, 
       isTemp: false
@@ -103,6 +113,9 @@ router.get("/", protect, async (req: Request, res: Response, next: NextFunction)
 
 router.get("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const resume = await ResumeModel.findById({
       _id: req.params.id,
       userId: req.user._id,
@@ -120,6 +133,9 @@ router.get("/:id", protect, async (req: Request, res: Response, next: NextFuncti
 
 router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { id } = req.params;
     if(!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400);

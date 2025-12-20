@@ -16,6 +16,10 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"), async (req: Req
   const { companyName, jobTitle, 
     jobLink, status, location, notes, salaryRange} = req.body || {};
 
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     // if (!req.body.userId) {
  
     if (!companyName && !jobTitle){
@@ -72,6 +76,9 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"), async (req: Req
 // @access         Public (later protected by auth)
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const data = await JobApplicationModel.find({
       userId: req.user._id, 
     }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
@@ -91,6 +98,10 @@ router.get('/', protect, async (req: Request, res: Response, next: NextFunction)
 // @access         Public (later protected by auth)
 router.get('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const application = await JobApplicationModel.findById({
       _id: req.params.id,
       userId: req.user._id,
@@ -110,6 +121,10 @@ router.get('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @access         Public (private in future with auth middleware)
 router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const { id } = req.params;
     if(!mongoose.Types.ObjectId.isValid(id)){ //if certain length in ID is missing will result idea not found
@@ -148,6 +163,10 @@ router.delete("/:id", protect, async (req: Request, res: Response, next: NextFun
 // @access         Public (private in future with auth middleware)
 router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
       const { id } = req.params;
   
       if(!mongoose.Types.ObjectId.isValid(id)) {
@@ -216,6 +235,10 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Re
 // @access         Protected (later with auth)
 router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const jobApplication = await JobApplicationModel.findById(req.params.id);
     if (!jobApplication) {
       return res.status(404).json({ error: "Resume not found" });

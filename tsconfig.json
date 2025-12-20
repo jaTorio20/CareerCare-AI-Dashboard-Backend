@@ -13,6 +13,6 @@
     "allowSyntheticDefaultImports": true, // smoother interop with JS libs
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },
-  "include": ["src"],
+  "include": ["src", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

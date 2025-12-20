@@ -9,7 +9,8 @@ import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
 import generateLetterRoutes from './routes/generateLetterRoutes';
 import jobApplicationRoutes from './routes/jobApplication/jobApplicationRoutes'
-import authRoutes from './routes/authRoutes'
+import authRoutes from './routes/auth/authRoutes'
+import googleRoutes from './routes/auth/googleOAuth'
 
 import cookieParser from "cookie-parser";
 //NODE CRON AUTO DELETE
@@ -61,7 +62,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/test', testRoute);
+
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', googleRoutes);
 
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/resumes/temp', tempRoutes);

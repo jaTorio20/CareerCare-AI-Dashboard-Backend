@@ -17,9 +17,9 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: true,
-    minlength: 6,
-    // select: false
+    required: false,
+    minlength: 8,
+    select: false
   },
   name: {
     type: String,
@@ -32,12 +32,12 @@ const userSchema = new Schema({
     sparse: true // allows multiple nulls (not all users have Google)
   },
   avatar: {
-    url: String,
-    filename: String
+    url: { type: String },
+    filename: { type: String }
   },
   resetPasswordToken: {
     type: String,
-    // index: true
+    index: true
   },
   resetPasswordExpires: Date,
 
@@ -64,8 +64,8 @@ const userSchema = new Schema({
 });
 
 // Hash passwords before saving
-userSchema.pre('save', async function () { //before saving. pre save
-  if(!this.isModified('password')) return; //check if password is not modified next() middleware is not needed
+userSchema.pre('save', async function (this: UserDocument) { //before saving. pre save
+  if(!this.isModified('password') || !this.password) return; //check if password is not modified next() middleware is not needed
 
   const salt = await bcrypt.genSalt(10)
   this.password = await bcrypt.hash(this.password, salt);

@@ -1,10 +1,19 @@
-import { User } from '../models/User';
+import { User } from '../../models/User';
 import express, {Request, Response, NextFunction} from 'express';
 import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '../utils/getJwtSecret';
-import { generateToken } from '../utils/generateToken';
+import { JWT_SECRET } from '../../utils/getJwtSecret';
+import { generateToken } from '../../utils/generateToken';
 import crypto from "crypto";
-import { sendVerificationEmail } from '../utils/sendOtp';
+import { sendVerificationEmail } from '../../utils/sendOtp';
+import jwt from "jsonwebtoken";
+import dotenv from 'dotenv';
+import { JwtPayload } from "jsonwebtoken";
+
+interface ResetPayload extends JwtPayload {
+  userId: string;
+}
+
+dotenv.config();
 
 const router = express.Router();
 
@@ -50,7 +59,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       html: `
         <p>Your OTP is <strong>${otp}</strong> valid only for 10 minutes.</p>
         <p>Or click here to verify: 
-          <a href="http://localhost:3000/verify?email=${encodeURIComponent(user.email)}">
+          <a href="${process.env.FRONTEND_URL}/verify?email=${encodeURIComponent(user.email)}">
             Verify Account
           </a>
         </p>`
@@ -99,13 +108,15 @@ router.post('/resend-otp', async (req: Request, res: Response, next: NextFunctio
     user.lastOtpSentAt = new Date();
     await user.save();
 
+    const baseUrl = `${process.env.FRONTEND_URL}/verify?email=${encodeURIComponent(user.email)}`;   
+
     await sendVerificationEmail({
       to: user.email,
       subject: "Verify your account",
       html: `
         <p>Your OTP is <strong>${otp}</strong> valid only for 10 minutes</p>
         <p>Or click here to verify: 
-          <a href="http://localhost:3000/verify?email=${encodeURIComponent(user.email)}">
+          <a href="${baseUrl}">
             Verify Account
           </a>
         </p>`
@@ -177,6 +188,78 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
 });
 
 
+router.post("/forgot-password", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({ message: "A reset link has been sent to your email." });
+    }
+
+    if (!user.isVerified) {
+      return res.status(400).json({ message: "Account is not verified. Please verify before resetting password." });
+    }
+
+    //Only verified users reach this point
+    const resetToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: "15m" }
+    );
+
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    await sendVerificationEmail({
+      to: user.email,
+      subject: "Password Reset",
+      html: `<p>Click <a href="${resetURL}">here</a> to reset your password. This link expires in 15 minutes.</p>`
+    });
+
+    return res.status(200).json({ message: "Password reset email sent." });
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+});
+
+router.get("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!)as ResetPayload;
+    return res.status(200).json({ valid: true, userId: payload.userId, token });
+  } catch (err) {
+    return res.status(400).json({ valid: false, message: "Invalid or expired token" });
+  }
+});
+
+
+
+router.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as ResetPayload;
+    const user = await User.findById(payload.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Assign plain password, pre-save hook will hash it
+    user.password = password;
+    await user.save();
+
+    return res.status(200).json({ message: "Password reset successful. You can now log in." });
+  } catch (err) {
+    return res.status(400).json({ message: "Invalid or expired token" });
+  }
+});
+
+
+
+
 
 // @route         POST api/auth/login
 // @description   Authenticate user
@@ -191,7 +274,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     }
 
     //Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if(!user){
       res.status(401); //unauthorized
