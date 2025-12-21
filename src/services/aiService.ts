@@ -139,3 +139,47 @@ export async function generateCoverLetter(jobDescription: string, jobTitle: stri
     throw new Error("Gemini did not return valid JSON");
   }
 }
+
+
+export interface ChatMessage {
+  role: "user" | "ai";
+  text: string;
+}
+
+export async function callAIModel({
+  prompt,
+  context,
+  history = [],
+}: {
+  prompt: string;
+  context?: { jobTitle?: string; companyName?: string; topic?: string; difficulty?: string };
+  history?: ChatMessage[];
+}) {
+  try {
+    const model = client.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-pro" });
+
+    // Build structured prompt
+    let fullPrompt = "";
+    if (context) {
+      fullPrompt += `Interview Context:\nJob Title: ${context.jobTitle}\nCompany: ${context.companyName}\nTopic: ${context.topic}\nDifficulty: ${context.difficulty}\n\n`;
+    }
+    if (history.length) {
+      fullPrompt += "Conversation so far:\n";
+      history.forEach((msg) => {
+        fullPrompt += `${msg.role === "user" ? "Candidate" : "AI"}: ${msg.text}\n`;
+      });
+      fullPrompt += "\n";
+    }
+    fullPrompt += `Candidate: ${prompt}\nAI:`; // user’s latest input + cue for AI reply
+
+    const result = await model.generateContent(fullPrompt);
+    const text = result.response.text();
+
+    return text;
+  } catch (err: any) {
+    console.error("AI generation error:", err);
+    throw new Error("Failed to generate AI response");
+  }
+}
+
+

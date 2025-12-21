@@ -12,6 +12,10 @@ import jobApplicationRoutes from './routes/jobApplication/jobApplicationRoutes'
 import authRoutes from './routes/auth/authRoutes'
 import googleRoutes from './routes/auth/googleOAuth'
 
+// Interview Routes
+import interviewSessionRoutes from "./routes/interview/interviewSessionRoutes";
+// import interviewMessageRoutes from "./routes/interview/interviewMessageRoutes"
+
 import cookieParser from "cookie-parser";
 //NODE CRON AUTO DELETE
 import cron from "node-cron";
@@ -66,14 +70,20 @@ app.use('/api/test', testRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleRoutes);
 
+// RESUMES
 app.use('/api/resumes', resumeRoutes);
 app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);
 
+//COVER LETTER
 app.use('/api/cover-letter', generateLetterRoutes);
 
+//JOB APPLICATION
 app.use('/api/job-application', jobApplicationRoutes);
 
+// INTERVIEW
+app.use("/api/interview", interviewSessionRoutes);
+// app.use("/api/interview", interviewMessageRoutes);
 
 //404 Fallback
 app.use((req, res, next) => {
