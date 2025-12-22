@@ -3,6 +3,12 @@ import { InterviewSessionModel } from "../../models/Interview/InterviewSession.m
 import { protect } from "../../middleware/authMiddleware";
 import { InterviewMessageModel } from "../../models/Interview/InterviewMessage";
 import { callAIModel } from "../../services/aiService";
+import { transcribeWithWhisper } from "../../services/whisper";
+import { storage } from "../../middleware/uploadMiddleware"; //just a temporary storage
+import multer from "multer";
+import fs from "fs"
+
+const upload = multer({ storage });
 
 const router = express.Router();
 
@@ -50,20 +56,34 @@ router.get("/sessions", protect, async (req: Request, res: Response, next: NextF
 });
 
 // it gets the value from InterviewSessionModel
-router.post("/sessions/:id/chat", protect, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/sessions/:id/chat", protect, upload.single("audio"), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log("Multer file:", req.file); // should show filename, path, mimetype
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-    const { text, audioUrl } = req.body;
+    const { text } = req.body;
     const sessionId = req.params.id;
+
+    let transcription = text;
+
+    if (req.file) { 
+      const audioPath = req.file.path;
+      console.log("Audio path:", audioPath); 
+      if (!fs.existsSync(audioPath)){ 
+        console.error("File not found:", audioPath);
+      } else {
+        transcription = await transcribeWithWhisper(audioPath); 
+        console.log("Whisper transcription:", transcription); 
+      } 
+    }
 
     // Save user message
     const userMessage = new InterviewMessageModel({
       sessionId,
       role: "user",
-      text,
-      audioUrl,
-      createdAt: new Date(),
+      text: transcription ?? "",
+      audioUrl: req.file ? req.file.filename : undefined,
+      // createdAt: new Date(),
     });
     await userMessage.save();
 
@@ -83,7 +103,7 @@ router.post("/sessions/:id/chat", protect, async (req: Request, res: Response, n
 
     // Generate AI reply
     const aiText = await callAIModel({
-      prompt: text, // the candidate’s latest input
+      prompt: transcription?.trim() ? transcription : "[unrecognized speech]", // the candidate’s latest input
       context: {
         jobTitle: session.jobTitle ?? undefined,
         companyName: session.companyName ?? undefined,
