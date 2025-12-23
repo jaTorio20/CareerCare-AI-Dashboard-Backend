@@ -4,11 +4,11 @@ import { protect } from "../../middleware/authMiddleware";
 import { InterviewMessageModel } from "../../models/Interview/InterviewMessage";
 import { callAIModel } from "../../services/aiService";
 import { transcribeWithWhisper } from "../../services/whisper";
-import { storage } from "../../middleware/uploadMiddleware"; //just a temporary storage
-import multer from "multer";
-import fs from "fs"
 
-const upload = multer({ storage });
+import { getAudioSignedUrl } from "../../services/backblaze";
+import { upload } from "../../middleware/uploadMiddleware";
+import { uploadAudioToB2 } from "../../services/backblaze";
+
 
 const router = express.Router();
 
@@ -56,75 +56,85 @@ router.get("/sessions", protect, async (req: Request, res: Response, next: NextF
 });
 
 // it gets the value from InterviewSessionModel
-router.post("/sessions/:id/chat", protect, upload.single("audio"), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    console.log("Multer file:", req.file); // should show filename, path, mimetype
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+router.post(
+  "/sessions/:id/chat",
+  protect,
+  upload.single("audio"),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-    const { text } = req.body;
-    const sessionId = req.params.id;
+      const { text } = req.body;
+      const sessionId = req.params.id;
 
-    let transcription = text;
+      let transcription = text;
+     let userMessage: InstanceType<typeof InterviewMessageModel>;
 
-    if (req.file) { 
-      const audioPath = req.file.path;
-      console.log("Audio path:", audioPath); 
-      if (!fs.existsSync(audioPath)){ 
-        console.error("File not found:", audioPath);
+      if (req.file) {
+        try {
+          const key = await uploadAudioToB2(req.file);
+          const transcription = await transcribeWithWhisper(req.file.buffer);
+
+          userMessage = new InterviewMessageModel({
+            sessionId,
+            role: "user",
+            text: transcription ?? "",
+            audioUrl: key,
+          });
+        } catch (err) {
+          console.error("Audio processing failed:", err);
+          userMessage = new InterviewMessageModel({
+            sessionId,
+            role: "user",
+            text: "[audio upload failed]",
+          });
+        }
       } else {
-        transcription = await transcribeWithWhisper(audioPath); 
-        console.log("Whisper transcription:", transcription); 
-      } 
+        userMessage = new InterviewMessageModel({
+          sessionId,
+          role: "user",
+          text: text ?? "",
+        });
+      }
+      await userMessage.save();
+
+
+      const session = await InterviewSessionModel.findById(sessionId);
+      if (!session) return res.status(404).json({ error: "Session not found" });
+
+      const historyDocs = await InterviewMessageModel.find({ sessionId }).sort({ createdAt: 1 });
+      const history = historyDocs.map((m) => ({
+        role: (m.role ?? "user") as "user" | "ai",
+        text: m.text ?? "",
+      }));
+
+      const aiText = await callAIModel({
+        prompt: transcription?.trim() ? transcription : "[unrecognized speech]",
+        context: {
+          jobTitle: session.jobTitle ?? undefined,
+          companyName: session.companyName ?? undefined,
+          topic: session.topic ?? undefined,
+          difficulty: session.difficulty ?? undefined,
+        },
+        history,
+      });
+
+      const aiMessage = new InterviewMessageModel({
+        sessionId,
+        role: "ai",
+        text: aiText,
+      });
+      await aiMessage.save();
+
+      console.log("Returning:", { userMessage, aiMessage });
+      res.status(201).json({ userMessage, aiMessage });
+    } catch (err) {
+      next(err);
     }
-
-    // Save user message
-    const userMessage = new InterviewMessageModel({
-      sessionId,
-      role: "user",
-      text: transcription ?? "",
-      audioUrl: req.file ? req.file.filename : undefined,
-      // createdAt: new Date(),
-    });
-    await userMessage.save();
-
-    const session = await InterviewSessionModel.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
-    }
-
-    // Build history in correct type
-    const historyDocs = await InterviewMessageModel.find({ sessionId }).sort({
-      createdAt: 1,
-    });
-    const history = historyDocs.map((m) => ({
-      role: (m.role ?? "user") as "user" | "ai", // default to "user" if null
-      text: m.text ?? "", // ensure string
-    }));
-
-    // Generate AI reply
-    const aiText = await callAIModel({
-      prompt: transcription?.trim() ? transcription : "[unrecognized speech]", // the candidate’s latest input
-      context: {
-        jobTitle: session.jobTitle ?? undefined,
-        companyName: session.companyName ?? undefined,
-        topic: session.topic ?? undefined,
-        difficulty: session.difficulty ?? undefined,
-      },
-      history,
-    });
-    const aiMessage = new InterviewMessageModel({
-      sessionId,
-      role: "ai",
-      text: aiText,
-      createdAt: new Date(),
-    });
-    await aiMessage.save();
-
-    res.status(201).json({ userMessage, aiMessage });
-  } catch (err) {;
-    next(err);
   }
-});
+);
+
+
 
 router.get("/sessions/:id/messages", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -137,6 +147,16 @@ router.get("/sessions/:id/messages", protect, async (req: Request, res: Response
   } catch (err) {
     next(err);
   }
+});
+
+router.get("/sessions/:id/audio/:key", protect, async (req: Request, res: Response, next: NextFunction) => { 
+  try {
+   const { key } = req.params; 
+   const signedUrl = await getAudioSignedUrl(key); 
+   res.json({ url: signedUrl }); 
+  } catch (err) { 
+    next(err); 
+  } 
 });
 
 export default router;

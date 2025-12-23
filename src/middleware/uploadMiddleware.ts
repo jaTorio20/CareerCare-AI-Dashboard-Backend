@@ -20,11 +20,7 @@ export const uploadMiddleware = multer({
 });
 
 
-export const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.resolve("uploads"));
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"));
-  },
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
 });

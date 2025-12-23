@@ -233,41 +233,63 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Re
 // @route          GET /api/job-application/:id/download
 // @description    Download resume file with original filename
 // @access         Protected (later with auth)
-router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+// router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     if (!req.user) {
+//       return res.status(401).json({ error: "Unauthorized" });
+//     }
 
-    const jobApplication = await JobApplicationModel.findById(req.params.id);
-    if (!jobApplication) {
-      return res.status(404).json({ error: "Resume not found" });
-    }
+//     const jobApplication = await JobApplicationModel.findById(req.params.id);
+//     if (!jobApplication) {
+//       return res.status(404).json({ error: "Resume not found" });
+//     }
 
-    if (!jobApplication.resumeFile) {
-      return res.status(404).json({ error: "Resume file not found" });
-    }
+//     if (!jobApplication.resumeFile) {
+//       return res.status(404).json({ error: "Resume file not found" });
+//     }
 
-    // Ownership check
-    if (jobApplication.userId.toString() !== req.user._id.toString() ) {
-      res.status(403);
-      throw new Error("Not authorized to download this resume");
-    }
+//     // Ownership check
+//     if (jobApplication.userId.toString() !== req.user._id.toString() ) {
+//       res.status(403);
+//       throw new Error("Not authorized to download this resume");
+//     }
 
-    // Force browser to use original filename
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${jobApplication.originalName}"`
-    );
+//     // Force browser to use original filename
+//     res.setHeader(
+//       "Content-Disposition",
+//       `attachment; filename="${jobApplication.originalName}"`
+//     );
 
-    // Stream Cloudinary file to client
-    const response = await axios.get(jobApplication.resumeFile, { responseType: "stream" });
-    response.data.pipe(res);
-  } catch (err) {
-    console.error("Failed to download resume", err);
-    res.status(500).json({ error: "Server error while downloading resume" });
-    next(err);
+//     // Stream Cloudinary file to client
+//     const response = await axios.get(jobApplication.resumeFile, { responseType: "stream" });
+//     response.data.pipe(res);
+//   } catch (err) {
+//     console.error("Failed to download resume", err);
+//     res.status(500).json({ error: "Server error while downloading resume" });
+//     next(err);
+//   }
+// });
+
+router.get('/:id/download', protect, async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
+  const jobApplication = await JobApplicationModel.findById(req.params.id);
+  if (!jobApplication) {
+    return res.status(404).json({ error: "Application not found" });
+  }
+
+  if (!jobApplication.resumeFile) {
+    return res.status(404).json({ error: "Resume file not found" });
+  }
+
+  // Force browser to use original filename
+res.setHeader('Content-Disposition', `attachment; filename="${jobApplication.originalName}"`);
+res.setHeader('Content-Type', jobApplication.originalName?.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+
+  // Stream file from Cloudinary to client
+  const response = await axios.get(jobApplication.resumeFile, { responseType: "stream" });
+  response.data.pipe(res);
 });
 
 

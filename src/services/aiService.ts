@@ -158,8 +158,15 @@ export async function callAIModel({
   try {
     const model = client.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-pro" });
 
-    // Build structured prompt
-    let fullPrompt = "";
+  // Handle trivial filler locally 
+    const trivial = ["okay", "sure", "no problem", "uh", "hmm"];
+    if (trivial.some(word => prompt.toLowerCase().includes(word))) {
+      return "Got it, let's continue.";
+    } 
+
+   // Build structured prompt 
+    let fullPrompt = `You are a supportive interviewer. If the candidate says casual filler, acknowledge politely and continue the interview.\n\n`;
+    
     if (context) {
       fullPrompt += `Interview Context:\nJob Title: ${context.jobTitle}\nCompany: ${context.companyName}\nTopic: ${context.topic}\nDifficulty: ${context.difficulty}\n\n`;
     }

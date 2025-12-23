@@ -2,17 +2,14 @@ import fs from "fs";
 import { Client } from "@gradio/client";
 
 
-export async function transcribeWithWhisper(audioPath: string) {
-  // Connect to your Hugging Face Space
-  const client = await Client.connect("jTorio30/speech-to-text");
+export async function transcribeWithWhisper(audioBuffer: Buffer) {
+  const uint8 = new Uint8Array(audioBuffer);
+  const arrayBuffer: ArrayBuffer = uint8.buffer;
 
-  // Convert local file into a Blob
-  const fileBlob = new Blob([fs.readFileSync(audioPath)], { type: "audio/wav" });
-
-  // Call the custom API endpoint `/transcribe`
-  const result = await client.predict("/transcribe", {
-    audio_path: fileBlob,
-  });
+  // Create Blob from ArrayBuffer 
+  const fileBlob = new Blob([arrayBuffer], { type: "audio/wav" }); 
+  const client = await Client.connect("jTorio30/speech-to-text"); 
+  const result = await client.predict("/transcribe", { audio_path: fileBlob, });
 
   console.log("Whisper response:", result.data);
   const data = result.data as any[]; 
