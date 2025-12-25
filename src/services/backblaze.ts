@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import fs from "fs";
 import { Readable } from "stream";
@@ -36,4 +36,20 @@ export async function getAudioSignedUrl(key: string) {
     Key: key,
   });
   return await getSignedUrl(s3, command, { expiresIn: 300 });
+};
+
+export async function deleteAudioFromB2(key: string) {
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.B2_BUCKET!,
+      Key: key,
+    })
+  );
 }
+
+// export function extractKeyFromUrl(url: string): string {
+//   const parts = url.split("/");
+//   return parts.slice(5).join("/"); // everything after /file/<bucket>/
+// }
+
+

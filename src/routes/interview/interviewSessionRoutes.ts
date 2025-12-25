@@ -9,6 +9,7 @@ import { getAudioSignedUrl } from "../../services/backblaze";
 import { upload } from "../../middleware/uploadMiddleware";
 import { uploadAudioToB2 } from "../../services/backblaze";
 
+import { deleteAudioFromB2 } from "../../services/backblaze";
 
 const router = express.Router();
 
@@ -61,74 +62,74 @@ router.post(
   protect,
   upload.single("audio"),
   async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-      const { text } = req.body;
-      const sessionId = req.params.id;
+    const { text } = req.body;
+    const sessionId = req.params.id;
 
-      let transcription = text;
-     let userMessage: InstanceType<typeof InterviewMessageModel>;
+    let transcription = text;
+    let userMessage: InstanceType<typeof InterviewMessageModel>;
 
-      if (req.file) {
-        try {
-          const key = await uploadAudioToB2(req.file);
-          const transcription = await transcribeWithWhisper(req.file.buffer);
+    if (req.file) {
+      try {
+        const key = await uploadAudioToB2(req.file);
+        const transcription = await transcribeWithWhisper(req.file.buffer);
 
-          userMessage = new InterviewMessageModel({
-            sessionId,
-            role: "user",
-            text: transcription ?? "",
-            audioUrl: key,
-          });
-        } catch (err) {
-          console.error("Audio processing failed:", err);
-          userMessage = new InterviewMessageModel({
-            sessionId,
-            role: "user",
-            text: "[audio upload failed]",
-          });
-        }
-      } else {
+        userMessage = new InterviewMessageModel({
+          sessionId,
+          role: "user",
+          text: transcription ?? "",
+          audioUrl: key,
+        });
+      } catch (err) {
+        console.error("Audio processing failed:", err);
+        userMessage = new InterviewMessageModel({
+          sessionId,
+          role: "user",
+          text: "[audio upload failed]",
+        });
+      }
+    } else {
         userMessage = new InterviewMessageModel({
           sessionId,
           role: "user",
           text: text ?? "",
         });
       }
-      await userMessage.save();
+    await userMessage.save();
 
 
-      const session = await InterviewSessionModel.findById(sessionId);
-      if (!session) return res.status(404).json({ error: "Session not found" });
+    const session = await InterviewSessionModel.findById(sessionId);
+    if (!session) return res.status(404).json({ error: "Session not found" });
 
-      const historyDocs = await InterviewMessageModel.find({ sessionId }).sort({ createdAt: 1 });
-      const history = historyDocs.map((m) => ({
-        role: (m.role ?? "user") as "user" | "ai",
-        text: m.text ?? "",
-      }));
+    const historyDocs = await InterviewMessageModel.find({ sessionId }).sort({ createdAt: 1 });
+    const history = historyDocs.map((m) => ({
+      role: (m.role ?? "user") as "user" | "ai",
+      text: m.text ?? "",
+    }));
 
-      const aiText = await callAIModel({
-        prompt: transcription?.trim() ? transcription : "[unrecognized speech]",
-        context: {
-          jobTitle: session.jobTitle ?? undefined,
-          companyName: session.companyName ?? undefined,
-          topic: session.topic ?? undefined,
-          difficulty: session.difficulty ?? undefined,
-        },
-        history,
-      });
+    const aiText = await callAIModel({
+      prompt: transcription?.trim() ? transcription : "[unrecognized speech]",
+      context: {
+        jobTitle: session.jobTitle ?? undefined,
+        companyName: session.companyName ?? undefined,
+        topic: session.topic ?? undefined,
+        difficulty: session.difficulty ?? undefined,
+      },
+      history,
+    });
 
-      const aiMessage = new InterviewMessageModel({
-        sessionId,
-        role: "ai",
-        text: aiText,
-      });
-      await aiMessage.save();
+    const aiMessage = new InterviewMessageModel({
+      sessionId,
+      role: "ai",
+      text: aiText,
+    });
+    await aiMessage.save();
 
-      console.log("Returning:", { userMessage, aiMessage });
-      res.status(201).json({ userMessage, aiMessage });
-    } catch (err) {
+    console.log("Returning:", { userMessage, aiMessage });
+    res.status(201).json({ userMessage, aiMessage });
+  } catch (err) {
       next(err);
     }
   }
@@ -158,6 +159,45 @@ router.get("/sessions/:id/audio/:key", protect, async (req: Request, res: Respon
     next(err); 
   } 
 });
+
+router.delete("/sessions/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    // Messages are deleted automatically by schema.pre inside InterviewSessionModel
+    const session = await InterviewSessionModel.findOneAndDelete({ _id: id });
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Deleting all audio files tied to session schema in Backblaze: 
+    const messages = await InterviewMessageModel.find({ sessionId: id });
+
+    const failedDeletes: string[] = [];
+
+    await Promise.all(
+      messages.map(async (msg) => {
+        if (msg.audioUrl) {
+          try {
+            await deleteAudioFromB2(msg.audioUrl);
+          } catch (err) {
+            console.error(`Failed to delete audio ${msg.audioUrl}:`, err);
+            failedDeletes.push(msg.audioUrl);
+          }
+        }
+      })
+    );
+
+    if (failedDeletes.length) {
+      console.warn("Some audio files could not be deleted:", failedDeletes);
+    }
+
+
+    res.json({ message: "Session delete" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export default router;
 

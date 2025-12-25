@@ -1,4 +1,5 @@
 import mongoose, { Schema, InferSchemaType } from "mongoose";
+import { InterviewMessageModel } from "./InterviewMessage";
 
 const InterviewSessionSchema = new Schema({
   userId: {
@@ -18,6 +19,14 @@ const InterviewSessionSchema = new Schema({
   startedAt: Date,
   endedAt: Date,
 }, { timestamps: true });
+
+// Delete all Sessions in InterviewMessageModel that has sessionId 
+InterviewSessionSchema.pre("findOneAndDelete", async function () {
+  const sessionId = this.getQuery()["_id"];
+  if (sessionId) {
+    await InterviewMessageModel.deleteMany({ sessionId });
+  }
+});
 
 export type InterviewSession = InferSchemaType<typeof InterviewSessionSchema>;
 export const InterviewSessionModel = mongoose.model<InterviewSession>("InterviewSession", InterviewSessionSchema);
