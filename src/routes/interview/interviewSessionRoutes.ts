@@ -74,7 +74,7 @@ router.post(
     if (req.file) {
       try {
         const key = await uploadAudioToB2(req.file);
-        const transcription = await transcribeWithWhisper(req.file.buffer);
+        transcription = await transcribeWithWhisper(req.file.buffer);
 
         userMessage = new InterviewMessageModel({
           sessionId,
@@ -109,7 +109,10 @@ router.post(
       text: m.text ?? "",
     }));
 
-    const aiText = await callAIModel({
+    let aiText: string;
+
+    try {
+      aiText = await callAIModel({
       prompt: transcription?.trim() ? transcription : "[unrecognized speech]",
       context: {
         jobTitle: session.jobTitle ?? undefined,
@@ -119,6 +122,15 @@ router.post(
       },
       history,
     });
+    } catch (err: any) {
+      console.error("AI call failed:", err); 
+      if (err?.status === 429) { 
+        aiText = "I'm unable to provide a detailed answer right now, but let's continue the conversation."; 
+      } else { 
+        aiText = "Sorry, something went wrong generating a response."; 
+      }
+    }
+
 
     const aiMessage = new InterviewMessageModel({
       sessionId,

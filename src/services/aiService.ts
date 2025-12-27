@@ -53,9 +53,9 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
     jobFitPercentage: parsed.jobFitPercentage ?? 0,
     jobFitSuggestions: parsed.jobFitSuggestions ?? [],
   }
-  } catch (err) {
-    console.error("Failed to parse Gemini response:", text);
-    throw new Error("Gemini did not return valid JSON");
+  } catch (err: any) {
+     throw new Error("Gemini did not return valid JSON");
+    // throw normalizeErrorAI(err);
   }
 }
 
@@ -135,8 +135,9 @@ export async function generateCoverLetter(jobDescription: string, jobTitle: stri
     generatedLetter: parsed.generatedLetter ?? ""
   } as CoverLetterResponse;
   } catch (err) {
-    console.error("Failed to parse Gemini response:", text);
+    // console.error("Failed to parse Gemini response:", text);
     throw new Error("Gemini did not return valid JSON");
+    // throw normalizeErrorAI(err);
   }
 }
 

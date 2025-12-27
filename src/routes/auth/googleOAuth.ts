@@ -23,7 +23,12 @@ passport.use(
 
         // Step 2: Check if user exists by email
         const email = profile.emails?.[0]?.value;
-        if (email) {
+
+        if (!email) {
+          return done(null, false, { message: "Google account has no email" });
+        }
+
+        // if (email) {
           user = await User.findOne({ email });
           if (user) {
             // Link Google account
@@ -41,7 +46,7 @@ passport.use(
             await user.save();
             return done(null, user);
           }
-        }
+        // }
 
         // Step 3: Create new user
         const newUser = await User.create({

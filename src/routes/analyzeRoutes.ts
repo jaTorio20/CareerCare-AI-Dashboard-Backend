@@ -60,9 +60,8 @@ router.post("/", protect, uploadMiddleware.single("resumeFile"),
       jobDescription: req.body.jobDescription,
       analysis,  
     });
-  } catch (err) {
-    console.error("Failed to upload resume", err);
-    next(err);
+  } catch (err: any) {
+    next(err)
   }
 });
 

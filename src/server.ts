@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import connectDB from './config/db';
 import cors from 'cors'; 
 import { errorHandler } from './middleware/errorHandler';
-import testRoute from './routes/testRoute';
 import analyzeRoutes from './routes/analyzeRoutes';
 import resumeRoutes from './routes/resumeRoutes';
 import tempRoutes from './routes/tempRoutes';
@@ -64,8 +63,6 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use('/api/test', testRoute);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleRoutes);

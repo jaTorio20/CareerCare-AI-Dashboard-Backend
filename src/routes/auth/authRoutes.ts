@@ -69,7 +69,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
       message: "Registration successful. Please verify your email with the OTP sent."
     });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     next(err);
   }
 });
@@ -124,7 +124,7 @@ router.post('/resend-otp', async (req: Request, res: Response, next: NextFunctio
 
     res.status(200).json({ message: "New OTP has been sent to your email." });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     next(err);
   }
 });
@@ -182,13 +182,13 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
       }
     });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     next(err);
   }
 });
 
 
-router.post("/forgot-password", async (req, res, next) => {
+router.post("/forgot-password", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -217,25 +217,26 @@ router.post("/forgot-password", async (req, res, next) => {
 
     return res.status(200).json({ message: "Password reset email sent." });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     next(err);
   }
 });
 
-router.get("/reset-password/:token", async (req, res) => {
+router.get("/reset-password/:token", async (req: Request, res: Response, next: NextFunction) => {
   const { token } = req.params;
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!)as ResetPayload;
     return res.status(200).json({ valid: true, userId: payload.userId, token });
   } catch (err) {
-    return res.status(400).json({ valid: false, message: "Invalid or expired token" });
+    // return res.status(400).json({ valid: false, message: "Invalid or expired token" });
+    next(err)
   }
 });
 
 
 
-router.post("/reset-password/:token", async (req, res) => {
+router.post("/reset-password/:token", async (req: Request, res: Response, next: NextFunction) => {
   const { token } = req.params;
   const { password } = req.body;
 
@@ -253,7 +254,8 @@ router.post("/reset-password/:token", async (req, res) => {
 
     return res.status(200).json({ message: "Password reset successful. You can now log in." });
   } catch (err) {
-    return res.status(400).json({ message: "Invalid or expired token" });
+    // return res.status(400).json({ message: "Invalid or expired token" });
+    next(err)
   }
 });
 
@@ -319,7 +321,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       }
     });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     next(err);
   }
 })
@@ -373,7 +375,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       }
     })
   } catch (err) {
-    res.status(401);
+    // res.status(401);
     next(err);
   }
 });
