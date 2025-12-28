@@ -1,11 +1,16 @@
 import express, { Request, Response, NextFunction } from "express";
-import { ResumeModel } from "../models/Resume";
+import { ResumeModel } from "../../models/Resume";
 const router = express.Router();
 import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import { protect } from "../middleware/authMiddleware";
+import { protect } from "../../middleware/authMiddleware";
 import mongoose from "mongoose";
+
+//VALIDATOR
+import { validate } from "../../middleware/validate";
+import { createResumeSchema, deleteResumeSchema } from "./resume.schema";
+import { CreateResumeBody, DeleteResumeParams } from "./resume.schema";
 
 // @route          GET /api/resumes/:id/download
 // @description    Download resume file with original filename
@@ -48,7 +53,9 @@ router.get("/:id/download", protect, async (req: Request, res: Response, next: N
 // @route          POST /api/resumes
 // @description    CREATE a new resume entry (saved as card)
 // @access         Private
-router.post("/", protect, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", protect, validate(createResumeSchema), 
+
+async (req: Request <any, any, CreateResumeBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -96,6 +103,7 @@ router.get("/", protect, async (req: Request, res: Response, next: NextFunction)
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+    
     const data = await ResumeModel.find({
       userId: req.user._id, 
       isTemp: false
@@ -131,16 +139,17 @@ router.get("/:id", protect, async (req: Request, res: Response, next: NextFuncti
 
 });
 
-router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", protect, validate(deleteResumeSchema), 
+async (req: Request<DeleteResumeParams, any, any>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     const { id } = req.params;
-    if(!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400);
-      throw new Error('Invalid Resume ID');
-    }
+    // if(!mongoose.Types.ObjectId.isValid(id)) {
+    //   res.status(400);
+    //   throw new Error('Invalid Resume ID');
+    // }
 
     const resume = await ResumeModel.findById(id);
     if (!resume) {
@@ -148,15 +157,15 @@ router.delete("/:id", protect, async (req: Request, res: Response, next: NextFun
       throw new Error('Resume not found');
     }
 
-    // Delete file from Cloudinary if publicId is stored
-    if (resume.publicId) {
-      await cloudinary.uploader.destroy(resume.publicId, { resource_type: "raw" });
-    }
-
     // Check if user owns the Resume
     if (resume.userId && resume.userId.toString() !== req.user._id.toString()) {
       res.status(403);
       throw new Error('Unauthorized to delete this resume');
+    }
+
+    // Delete file from Cloudinary if publicId is stored
+    if (resume.publicId) {
+      await cloudinary.uploader.destroy(resume.publicId, { resource_type: "raw" });
     }
 
     await resume.deleteOne();

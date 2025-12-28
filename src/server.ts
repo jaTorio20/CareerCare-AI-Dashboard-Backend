@@ -3,47 +3,29 @@ import dotenv from 'dotenv';
 import connectDB from './config/db';
 import cors from 'cors'; 
 import { errorHandler } from './middleware/errorHandler';
-import analyzeRoutes from './routes/analyzeRoutes';
-import resumeRoutes from './routes/resumeRoutes';
-import tempRoutes from './routes/tempRoutes';
-import generateLetterRoutes from './routes/generateLetterRoutes';
+
+// RESUMES ROUTES IMPORT
+import analyzeRoutes from './routes/resumes/analyzeRoutes'
+import resumeRoutes from './routes/resumes/resumeRoutes';
+import tempRoutes from './routes/resumes/tempRoutes';
+
+// COVER LETTER
+import generateLetterRoutes from './routes/coverLetter/generateLetterRoutes';
+
+// JOB APPLICATIONS
 import jobApplicationRoutes from './routes/jobApplication/jobApplicationRoutes'
+
+// AUTH
 import authRoutes from './routes/auth/authRoutes'
 import googleRoutes from './routes/auth/googleOAuth'
 
 // Interview Routes
 import interviewSessionRoutes from "./routes/interview/interviewSessionRoutes";
-// import interviewMessageRoutes from "./routes/interview/interviewMessageRoutes"
 
 import cookieParser from "cookie-parser";
-//NODE CRON AUTO DELETE
-import cron from "node-cron";
-import { v2 as cloudinary } from "cloudinary";
-import { ResumeModel } from './models/Resume';
 
-// Run every hour
- cron.schedule("0 0 * * *", async () => {
-  try {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-
-    // Find temp resumes older than cutoff
-    const oldTemps = await ResumeModel.find({
-      createdAt: { $lt: cutoff },
-      isTemp: true
-    });
-
-    for (const resume of oldTemps) {
-      // Delete from Cloudinary
-      await cloudinary.uploader.destroy(resume.publicId, { resource_type: "raw" });
-      // Delete from MongoDB
-      await ResumeModel.deleteOne({ _id: resume._id });
-    }
-
-    console.log(`Cleaned up ${oldTemps.length} temp resumes`);
-  } catch (err) {
-    console.error("Error cleaning temp resumes:", err);
-  }
-});
+//NODE CRON AUTO CLEAN UP
+import { scheduleCleanupTempResumes } from './cronJobs/cleanupTempResumes';
 
 dotenv.config();
 
@@ -52,6 +34,8 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to the database
 connectDB();
+
+scheduleCleanupTempResumes();
 
 app.use(cookieParser());
 // CORS Configuration
@@ -80,7 +64,6 @@ app.use('/api/job-application', jobApplicationRoutes);
 
 // INTERVIEW
 app.use("/api/interview", interviewSessionRoutes);
-// app.use("/api/interview", interviewMessageRoutes);
 
 //404 Fallback
 app.use((req, res, next) => {

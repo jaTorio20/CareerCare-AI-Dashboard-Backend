@@ -1,14 +1,23 @@
 import express, {  Request, Response, NextFunction } from 'express';
-import { generateCoverLetter } from '../services/aiService';
-import { CoverLetterModel } from '../models/CoverLetter';
+import { generateCoverLetter } from '../../services/aiService';
+import { CoverLetterModel } from '../../models/CoverLetter';
 import mongoose from 'mongoose';
-import { protect } from '../middleware/authMiddleware';
+import { protect } from '../../middleware/authMiddleware';
+
+// VALIDATION
+import { validate } from '../../middleware/validate';
+import { generateCoverLetterSchema, saveCoverLetterSchema, 
+  updateCoverLetterSchema, deleteCoverLetterSchema } from './coverLetter.schema';
+import { GenerateCoverLetterBody, SaveCoverLetterBody, 
+  UpdateCoverLetterParams, UpdateCoverLetterBody, DeleteCoverLetterParams } from './coverLetter.schema'; //Type safe
 
 const router = express.Router();
 // @route          POST /api/cover-letter/generate
 // @description    Generate a cover letter based on job description and optional user details
 // @access         Private
-router.post('/generate', protect, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/generate', protect, 
+  validate(generateCoverLetterSchema),
+  async (req: Request<any, any, GenerateCoverLetterBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -19,7 +28,11 @@ router.post('/generate', protect, async (req: Request, res: Response, next: Next
       return res.status(400).json({ error: "jobDescription is required" });
     }
     
-    const coverLetter = await generateCoverLetter(jobDescription, userDetails, jobTitle, companyName);
+    const coverLetter = await generateCoverLetter(
+      jobDescription, 
+      userDetails ?? "", 
+      jobTitle, 
+      companyName);
     res.status(200).json(coverLetter);
   } catch (err) {
     next(err);
@@ -29,7 +42,9 @@ router.post('/generate', protect, async (req: Request, res: Response, next: Next
 // @route          POST /api/cover-letter/
 // @description    save generated cover letter to DB
 // @access         Private
-router.post('/', protect, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', protect, 
+  validate(saveCoverLetterSchema),
+  async (req: Request<any, any, SaveCoverLetterBody >, res: Response, next: NextFunction) => {
   try{
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -110,18 +125,15 @@ router.get('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @route          PUT /api/cover-letter/:id
 // @description    update a specific cover letter by ID
 // @access         Private
-router.put('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', protect, 
+  validate(updateCoverLetterSchema),
+  async (req: Request<UpdateCoverLetterParams, any, UpdateCoverLetterBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { id } = req.params;
-
-    if(!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400);
-      throw new Error('Invalid cover letter ID');
-    }
 
     const coverLetter = await CoverLetterModel.findById(id);
     if (!coverLetter) {
@@ -158,7 +170,9 @@ router.put('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @route          DELETE /api/cover-letter/:id   
 // @description    delete a specific cover letter by ID
 // @access         Private
-router.delete('/:id', protect, async (req: Request, res: Response, next: NextFunction) => {      
+router.delete('/:id', protect, 
+  validate(deleteCoverLetterSchema),
+  async (req: Request<DeleteCoverLetterParams, any, any>, res: Response, next: NextFunction) => {      
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });

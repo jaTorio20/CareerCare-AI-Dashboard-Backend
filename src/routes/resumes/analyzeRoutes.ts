@@ -1,10 +1,15 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { uploadMiddleware } from '../middleware/uploadMiddleware';
-import {uploadToCloudinary} from '../services/cloudinaryService';
-import { parseFile } from '../services/fileService';
-import { analyzeResume } from '../services/aiService';
-import { ResumeModel } from '../models/Resume';
-import { protect } from '../middleware/authMiddleware';
+import { uploadMiddleware } from '../../middleware/uploadMiddleware';
+import { uploadToCloudinary } from '../../services/cloudinaryService';
+import { parseFile } from '../../services/fileService';
+import { analyzeResume } from '../../services/aiService';
+import { ResumeModel } from '../../models/Resume';
+import { protect } from '../../middleware/authMiddleware';
+
+// VALIDATOR
+import { validate } from '../../middleware/validate';
+import { uploadResumeSchema } from './resume.schema';
+import { UploadResumeBody } from './resume.schema';
 
 const router = express.Router();
 
@@ -12,6 +17,7 @@ const router = express.Router();
 // @desccription   CREATE and analyze a resume WITHOUT saving to DB
 // @access          Public
 router.post("/", protect, uploadMiddleware.single("resumeFile"),
+validate(uploadResumeSchema),
  async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
@@ -38,8 +44,9 @@ router.post("/", protect, uploadMiddleware.single("resumeFile"),
     // Parse file
     const resumeText = await parseFile(req.file);
 
+    const { jobDescription }: UploadResumeBody = req.body;
     // Run AI analysis
-    const analysis = await analyzeResume(resumeText, req.body.jobDescription);
+    const analysis = await analyzeResume(resumeText, jobDescription);
 
       // Save TEMP record in DB
     const tempResume = new ResumeModel({

@@ -11,9 +11,16 @@ import { uploadAudioToB2 } from "../../services/backblaze";
 
 import { deleteAudioFromB2 } from "../../services/backblaze";
 
+// VALIDATOR
+import { validate } from "../../middleware/validate";
+import { createInterviewSessionSchema, createInterviewMessageSchema, deleteInterviewSessionSchema } from "./interviewSession.schema";
+import { CreateInterviewSessionBody, CreateInterviewMessageBody, CreateInterviewMessageParams, DeleteInterviewSessionParams } from "./interviewSession.schema";
+
 const router = express.Router();
 
-router.post('/sessions', protect, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/sessions', protect, 
+  validate(createInterviewSessionSchema),
+  async (req: Request<any, any, CreateInterviewSessionBody >, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -61,12 +68,13 @@ router.post(
   "/sessions/:id/chat",
   protect,
   upload.single("audio"),
-  async (req: Request, res: Response, next: NextFunction) => {
+  validate(createInterviewMessageSchema),
+  async (req: Request<CreateInterviewMessageParams, any, CreateInterviewMessageBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
     const { text } = req.body;
-    const sessionId = req.params.id;
+    const { id: sessionId } = req.params;
 
     let transcription = text;
     let userMessage: InstanceType<typeof InterviewMessageModel>;
@@ -131,7 +139,6 @@ router.post(
       }
     }
 
-
     const aiMessage = new InterviewMessageModel({
       sessionId,
       role: "ai",
@@ -172,7 +179,9 @@ router.get("/sessions/:id/audio/:key", protect, async (req: Request, res: Respon
   } 
 });
 
-router.delete("/sessions/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/sessions/:id", protect, 
+  validate(deleteInterviewSessionSchema),
+  async (req: Request<DeleteInterviewSessionParams, any, any>, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     // Messages are deleted automatically by schema.pre inside InterviewSessionModel

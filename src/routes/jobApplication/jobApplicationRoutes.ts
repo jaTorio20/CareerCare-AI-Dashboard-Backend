@@ -7,72 +7,79 @@ import { uploadMiddleware } from '../../middleware/uploadMiddleware';
 import axios from "axios";
 import { protect } from '../../middleware/authMiddleware';
 
+// VALIDATOR
+import { validate } from '../../middleware/validate';
+import { createJobApplicationSchema, deleteJobApplicationSchema, updateJobApplicationSchema, } from './jobApplication.schema';
+import { CreateJobApplicationBody, UpdateJobApplicationBody, DeleteJobApplicationParams } from './jobApplication.schema';
+
 const router = express.Router();
 
 // @route          POST /api/job-application
 // @description    CREATE a new application entry (saved as card)
 // @access         Public (later protected by auth)
-router.post('/', protect, uploadMiddleware.single("resumeFile"), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { companyName, jobTitle, 
-      jobLink, status, location, notes, salaryRange} = req.body || {};
+router.post('/', protect, uploadMiddleware.single("resumeFile"), 
+  validate(createJobApplicationSchema),
+  async (req: Request<any, any, CreateJobApplicationBody>, res: Response, next: NextFunction) => {
+    try {
+      const { companyName, jobTitle, 
+        jobLink, status, location, notes, salaryRange} = req.body || {};
 
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    // if (!req.body.userId) {
- 
-    if (!companyName && !jobTitle){
-      return res.status(400).json({ error: "companyName and jobTitle are required" });
-    }
-
-    let resumeFile: string | undefined;
-    let publicId: string | undefined;
-    let originalName: string | undefined;
-
-    if (req.file){
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ];
-
-      if (!allowedTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ error: "Unsupported file type" });
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
-            // Upload to Cloudinary only if file exists
-      const uploadResult = await uploadToCloudinaryJobApplication(
-        req.file.buffer,
-        req.file.originalname,
-        "resumes/jobApplication"
-      );
 
-      resumeFile = uploadResult.secure_url;
-      publicId = uploadResult.public_id;
-      originalName = req.file.originalname;
-    }
-
+      // if (!req.body.userId) {
   
-  const jobApplication = new JobApplicationModel({
-      userId: req.user._id,
-      companyName,
-      jobTitle,
-      jobLink,
-      status,
-      location,
-      notes,
-      salaryRange,
-      originalName,
-      resumeFile: resumeFile,
-      publicId,
-  });
+      if (!companyName || !jobTitle){
+        return res.status(400).json({ error: "companyName and jobTitle are required" });
+      }
 
-  await jobApplication.save();
-  res.status(201).json(jobApplication);
-  } catch (err) {
-    next(err)
-  }
+      let resumeFile: string | undefined;
+      let publicId: string | undefined;
+      let originalName: string | undefined;
+
+      if (req.file){
+        const allowedTypes = [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ];
+
+        if (!allowedTypes.includes(req.file.mimetype)) {
+          return res.status(400).json({ error: "Unsupported file type" });
+        }
+              // Upload to Cloudinary only if file exists
+        const uploadResult = await uploadToCloudinaryJobApplication(
+          req.file.buffer,
+          req.file.originalname,
+          "resumes/jobApplication"
+        );
+
+        resumeFile = uploadResult.secure_url;
+        publicId = uploadResult.public_id;
+        originalName = req.file.originalname;
+      }
+
+    
+      const jobApplication = new JobApplicationModel({
+        userId: req.user._id,
+        companyName,
+        jobTitle,
+        jobLink,
+        status,
+        location,
+        notes,
+        salaryRange,
+        originalName,
+        resumeFile: resumeFile,
+        publicId,
+      });
+
+    await jobApplication.save();
+      res.status(201).json(jobApplication);
+    } catch (err) {
+      next(err)
+    }
 });
 
 // @route          POST /api/job-application
@@ -123,7 +130,9 @@ router.get('/:id', protect, async (req: Request, res: Response, next: NextFuncti
 // @route          DELETE /api/job-application/:id   
 // @description    delete a specific job application by ID
 // @access         Public (private in future with auth middleware)
-router.delete("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/:id", protect, 
+  validate(deleteJobApplicationSchema),
+  async (req: Request<DeleteJobApplicationParams, any, any>, res: Response, next: NextFunction) => {
   try {
 
     if (!req.user) {
@@ -131,10 +140,10 @@ router.delete("/:id", protect, async (req: Request, res: Response, next: NextFun
     }
 
     const { id } = req.params;
-    if(!mongoose.Types.ObjectId.isValid(id)){ //if certain length in ID is missing will result idea not found
-      res.status(404);
-      throw new Error('Application Not Found')      
-    }
+    // if(!mongoose.Types.ObjectId.isValid(id)){ //if certain length in ID is missing will result idea not found
+    //   res.status(404);
+    //   throw new Error('Application Not Found')      
+    // }
 
     const jobApplication = await JobApplicationModel.findById(id);
     if(!jobApplication){
@@ -165,18 +174,14 @@ router.delete("/:id", protect, async (req: Request, res: Response, next: NextFun
 // @route          UPDATE /api/job-application/:id   
 // @description    update a specific job application by ID
 // @access         Public (private in future with auth middleware)
-router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', protect, uploadMiddleware.single("resumeFile"),
+  validate(updateJobApplicationSchema),
+  async(req: Request<any, any, UpdateJobApplicationBody>, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-
       const { id } = req.params;
-  
-      if(!mongoose.Types.ObjectId.isValid(id)) {
-        res.status(400);
-        throw new Error('Invalid Job Application ID');
-      }
   
       const jobApplication = await JobApplicationModel.findById(id);
       if (!jobApplication) {
@@ -200,11 +205,11 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"), async(req: Re
   
       jobApplication.companyName = companyName;
       jobApplication.jobTitle = jobTitle;
-      jobApplication.jobLink = jobLink;
-      jobApplication.status = status;
-      jobApplication.location = location;
-      jobApplication.notes = notes;
-      jobApplication.salaryRange = salaryRange;
+      if (jobLink !== undefined) jobApplication.jobLink = jobLink;
+      if (status !== undefined) jobApplication.status = status;
+      if (location !== undefined) jobApplication.location = location;
+      if (notes !== undefined) jobApplication.notes = notes;
+      if (salaryRange !== undefined) jobApplication.salaryRange = salaryRange;
   
     // Handle resume update if a new file is uploaded
       if (req.file) {
