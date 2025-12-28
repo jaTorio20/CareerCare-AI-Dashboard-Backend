@@ -36,6 +36,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdf-parse": "^2.4.5",
+    "sanitize-html": "^2.17.0",
     "stream": "^0.0.3",
     "uuid": "^13.0.0",
     "zod": "^4.2.1"
@@ -50,6 +51,7 @@
     "@types/node": "^24.10.4",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
+    "@types/sanitize-html": "^2.16.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

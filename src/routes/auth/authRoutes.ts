@@ -9,6 +9,15 @@ import jwt from "jsonwebtoken";
 import dotenv from 'dotenv';
 import { JwtPayload } from "jsonwebtoken";
 
+// VALIDATION
+import { validate } from '../../middleware/validate';
+import { registerUserSchema, resendOtpSchema, 
+  verifyOtpSchema, forgotPasswordSchema, 
+  resetPasswordSchema, loginUserSchema } from './auth.schema';
+import { RegisterUserBody, ResendOtpBody, 
+  VerifyOtpBody, ForgotPasswordBody, 
+  ResetPasswordParams, ResetPasswordBody, LoginUserBody } from './auth.schema'; //Infer types
+
 interface ResetPayload extends JwtPayload {
   userId: string;
 }
@@ -20,7 +29,9 @@ const router = express.Router();
 // @route         POST api/auth/register
 // @description   Register new user
 // @access        Public
-router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/register', 
+  validate(registerUserSchema), 
+  async (req: Request<any, any, RegisterUserBody>, res: Response, next: NextFunction) => {
   try {
     const { name, email, password } = req.body || {};
 
@@ -77,7 +88,9 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
 // @route         POST api/auth/resend-otp
 // @description   Resend OTP to unverified user
 // @access        Public
-router.post('/resend-otp', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/resend-otp', 
+  validate(resendOtpSchema),
+  async (req: Request<any, any, ResendOtpBody>, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body || {};
     if (!email) {
@@ -88,13 +101,8 @@ router.post('/resend-otp', async (req: Request, res: Response, next: NextFunctio
     const user = await User.findOne({ email });
     if (!user || user.isVerified) {
       // Security: generic response to avoid account enumeration
-      return res.status(200).json({ message: "If this email exists, an OTP has been sent." });
+      return res.status(200).json({ message: "An OTP has been sent." });
     }
-
-    // if (user.isVerified) {
-    //   res.status(400);
-    //   throw new Error("User is already verified");
-    // }
 
     // Optional: rate-limit resend
     if (user.lastOtpSentAt && Date.now() - user.lastOtpSentAt.getTime() < 60 * 1000) { // resend after 1 minute
@@ -130,7 +138,9 @@ router.post('/resend-otp', async (req: Request, res: Response, next: NextFunctio
 });
 
 
-router.post('/verify', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/verify', 
+  validate(verifyOtpSchema),
+  async (req: Request<any, any, VerifyOtpBody>, res: Response, next: NextFunction) => {
   try {
     const { email, otp } = req.body;
 
@@ -188,7 +198,9 @@ router.post('/verify', async (req: Request, res: Response, next: NextFunction) =
 });
 
 
-router.post("/forgot-password", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/forgot-password", 
+  validate(forgotPasswordSchema),
+  async (req: Request<any, any, ForgotPasswordBody>, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -222,6 +234,7 @@ router.post("/forgot-password", async (req: Request, res: Response, next: NextFu
   }
 });
 
+
 router.get("/reset-password/:token", async (req: Request, res: Response, next: NextFunction) => {
   const { token } = req.params;
 
@@ -235,8 +248,9 @@ router.get("/reset-password/:token", async (req: Request, res: Response, next: N
 });
 
 
-
-router.post("/reset-password/:token", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/reset-password/:token", 
+  validate(resetPasswordSchema),
+  async (req: Request<ResetPasswordParams, any, ResetPasswordBody>, res: Response, next: NextFunction) => {
   const { token } = req.params;
   const { password } = req.body;
 
@@ -259,14 +273,12 @@ router.post("/reset-password/:token", async (req: Request, res: Response, next: 
   }
 });
 
-
-
-
-
 // @route         POST api/auth/login
 // @description   Authenticate user
 // @access        Public
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', 
+  validate(loginUserSchema),
+  async (req: Request<any, any, LoginUserBody>, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body || {} ;
 
@@ -348,7 +360,9 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 //every time the frontend calls the /refresh
   try {
     const token = req.cookies?.refreshToken;
-    console.log('Refreshing token...')
+    if(process.env.NODE_ENV === 'development'){
+      console.log('Refreshing token...')
+    }
 
     if(!token){
       res.status(401);
