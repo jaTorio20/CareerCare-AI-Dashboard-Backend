@@ -23,7 +23,7 @@ const userSchema = new Schema({
   },
   name: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   googleId: {
@@ -65,10 +65,22 @@ const userSchema = new Schema({
 
 // Hash passwords before saving
 userSchema.pre('save', async function (this: UserDocument) { //before saving. pre save
-  if(!this.isModified('password') || !this.password) return; //check if password is not modified next() middleware is not needed
+  if (this.isModified('password') && this.password) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 
-  const salt = await bcrypt.genSalt(10)
-  this.password = await bcrypt.hash(this.password, salt);
+  // Set avatar if not set
+  if (!this.avatar?.url) {
+    if (this.googleId && this.avatar?.url) {
+      // Use Google avatar if user signed up with Google
+    } else {
+      this.avatar = {
+        url: ``,
+        filename: '',
+      };
+    }
+  }
 
 });
 

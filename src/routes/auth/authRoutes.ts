@@ -9,6 +9,10 @@ import jwt from "jsonwebtoken";
 import dotenv from 'dotenv';
 import { JwtPayload } from "jsonwebtoken";
 
+// RATE LIMIT
+import { verifyOtpLimiter, forgotPasswordOtpLimiter,
+   loginOtpLimiter, registerLimiter } from '../../middleware/rateLimit';
+
 // VALIDATION
 import { validate } from '../../middleware/validate';
 import { registerUserSchema, resendOtpSchema, 
@@ -30,14 +34,15 @@ const router = express.Router();
 // @description   Register new user
 // @access        Public
 router.post('/register', 
+  registerLimiter,
   validate(registerUserSchema), 
   async (req: Request<any, any, RegisterUserBody>, res: Response, next: NextFunction) => {
   try {
-    const { name, email, password } = req.body || {};
+    const { email } = req.body || {};
 
-    if (!name || !email || !password) {
-      res.status(400);
-      throw new Error('All fields are required');
+    if (!email) {
+      return res.status(400).json({ message: "All fields required" });
+      // throw new Error('All fields are required');
     }
 
     const existingUser = await User.findOne({ email });
@@ -48,16 +53,14 @@ router.post('/register',
           needsVerification: true
         });
       }
-      res.status(409);
-      throw new Error("User already exists and is verified");
+      return res.status(409).json({ message: "User already exists" });
+      // throw new Error("User already exists");
     }
 
     // Create user with isVerified = false
     const otp = crypto.randomInt(100000, 999999).toString();
     const user = await User.create({
-      name,
       email,
-      password,
       isVerified: false,
       otp,
       otpExpires: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
@@ -94,8 +97,8 @@ router.post('/resend-otp',
   try {
     const { email } = req.body || {};
     if (!email) {
-      res.status(400);
-      throw new Error("Email is required");
+      return res.status(400).json({ message: "Email is required" });
+      // throw new Error("Email is required");
     }
 
     const user = await User.findOne({ email });
@@ -105,10 +108,15 @@ router.post('/resend-otp',
     }
 
     // Optional: rate-limit resend
-    if (user.lastOtpSentAt && Date.now() - user.lastOtpSentAt.getTime() < 60 * 1000) { // resend after 1 minute
-      res.status(429);
-      throw new Error("Please wait before requesting another OTP");
+    if (
+      user.lastOtpSentAt &&
+      Date.now() - user.lastOtpSentAt.getTime() < 60 * 1000
+    ) {
+      return res.status(429).json({
+        message: "Please wait before requesting another OTP",
+      });
     }
+
 
     const otp = crypto.randomInt(100000, 999999).toString();
     user.otp = otp;
@@ -138,32 +146,35 @@ router.post('/resend-otp',
 });
 
 
-router.post('/verify', 
+router.post('/verify',
+  verifyOtpLimiter, 
   validate(verifyOtpSchema),
   async (req: Request<any, any, VerifyOtpBody>, res: Response, next: NextFunction) => {
   try {
-    const { email, otp } = req.body;
+    const { email, name, password, otp } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(401);
-      throw new Error("Invalid credentials");
+      return res.status(401).json({ message: "Invalid credentials" });
+      // throw new Error("Invalid credentials");
     }
 
     if (user.isVerified) {
-      res.status(409); //Conflict
-      throw new Error("User already verified");
+      return res.status(409).json({ message: "User already verified" }); //Conflict
+      // throw new Error("User already verified");
     }
 
     //normalize OTP before comparing
     const cleanOtp = otp?.trim();
 
     if (user.otp !== cleanOtp || !user.otpExpires || Date.now() > user.otpExpires.getTime()) {
-      res.status(401); // Unauthorized
-      throw new Error("Invalid or expired OTP");
+      return res.status(400).json({ message: "Invalid or expired OTP" }); // Unauthorized
+      // throw new Error("Invalid or expired OTP");
     }
 
     // Mark verified
+    user.name = name;
+    user.password = password;
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpires = undefined;
@@ -199,6 +210,7 @@ router.post('/verify',
 
 
 router.post("/forgot-password", 
+  forgotPasswordOtpLimiter,
   validate(forgotPasswordSchema),
   async (req: Request<any, any, ForgotPasswordBody>, res: Response, next: NextFunction) => {
   try {
@@ -277,36 +289,42 @@ router.post("/reset-password/:token",
 // @description   Authenticate user
 // @access        Public
 router.post('/login', 
+  loginOtpLimiter,
   validate(loginUserSchema),
   async (req: Request<any, any, LoginUserBody>, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body || {} ;
 
     if (!email || !password){
-      res.status(400);
-      throw new Error('Email and password are required');
+      return res.status(400).json({ message: "Email and password are required" });
+      // throw new Error('Email and password are required');
     }
 
     //Find user
     const user = await User.findOne({ email }).select("+password");
 
     if(!user){
-      res.status(401); //unauthorized
-      throw new Error('Invalid Credentials');
+      return res.status(401).json({ message: 'Invalid Credentials' });
     }
 
     // Block unverified accounts
     if (!user.isVerified) {
-      res.status(403); // forbidden
-      throw new Error('Account not verified. Please check your email for the OTP.');
+      return res.status(401).json({ message: 'Account is not yet verified. Please check your email for OTP' });
     }
+
+    // Google-only account (no password set)
+    if (!user.password) {
+      return res.status(400).json({
+        message: 'This account uses Google Sign-In. Please log in with Google. Or click forgot password.',
+      });
+    }
+
 
     //Check if password matches
     const isMatch = await user.matchPassword(password); //matchPassword created in User schema
   
     if(!isMatch){
-      res.status(401); //unauthorized
-      throw new Error('Invalid Credentials');
+      return res.status(401).json({ message: 'Invalid Credentials' });
     };
 
 
@@ -329,7 +347,9 @@ router.post('/login',
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        avatar: user.avatar, 
+        role: user.role
       }
     });
   } catch (err) {
@@ -366,7 +386,8 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 
     if(!token){
       res.status(401);
-      throw new Error('No refresh token');
+      // throw new Error('No refresh token');
+      return res.status(401).json({ message: "No refresh token" });
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET);
@@ -374,8 +395,8 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     const user = await User.findById(payload.userId);
 
     if (!user){
-      res.status(401);
-      throw new Error('No user');
+      return res.status(401).json({ message: "No refresh token" });
+      // throw new Error('No user');
     }
 
     const newAccessToken = await generateToken({userId: user._id.toString()}, '15m');
@@ -386,6 +407,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
         id: user._id,
         name: user.name,
         email: user.email,
+        avatar: user.avatar 
       }
     })
   } catch (err) {

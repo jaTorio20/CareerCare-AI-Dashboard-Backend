@@ -9,9 +9,7 @@ export const sanitizeString = (value: string): string => {
 // Registration schema
 export const registerUserSchema = z.object({
   body: z.object({
-    name: z.string().min(1, "Name is required").transform(sanitizeString),
     email: z.email({ error: "Invalid email address" }).transform(sanitizeString),
-    password: z.string().min(8, { error: "Password must be at least 8 characters" }),
   }),
 });
 
@@ -26,6 +24,8 @@ export const resendOtpSchema = z.object({
 export const verifyOtpSchema = z.object({
   body: z.object({
     email: z.email({ error: "A valid email is required" }),
+    name: z.string().min(1, "Name is required").transform(sanitizeString),
+    password: z.string().min(8, { error: "Password must be at least 8 characters" }),
     otp: z.string().min(6, "OTP is required").max(6, "OTP must be 6 digits"),
   }),
 });
