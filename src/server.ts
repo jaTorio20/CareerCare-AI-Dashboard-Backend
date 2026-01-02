@@ -70,11 +70,11 @@ app.use(cors({
 
 app.use(httpLogger);
 
-app.get("/api/health", async (req, res) => {
+app.get("/", async (req, res) => {
   const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
   const dbStatus = dbStates[mongoose.connection.readyState];
 
-  logger.info({ route: "/api/health", dbStatus, uptime: process.uptime() }, "Health check requested");
+  logger.info({ route: "/", dbStatus, uptime: process.uptime() }, "Health check requested");
 
   res.status(200).json({
     status: "ok",
