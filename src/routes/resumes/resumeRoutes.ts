@@ -1,16 +1,16 @@
 import express, { Request, Response, NextFunction } from "express";
 import { ResumeModel } from "../../models/Resume";
-const router = express.Router();
 import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { protect } from "../../middleware/authMiddleware";
-import mongoose from "mongoose";
 
 //VALIDATOR
 import { validate } from "../../middleware/validate";
 import { createResumeSchema, deleteResumeSchema } from "./resume.schema";
 import { CreateResumeBody, DeleteResumeParams } from "./resume.schema";
+
+const router = express.Router();
 
 // @route          GET /api/resumes/:id/download
 // @description    Download resume file with original filename
@@ -53,8 +53,8 @@ router.get("/:id/download", protect, async (req: Request, res: Response, next: N
 // @route          POST /api/resumes
 // @description    CREATE a new resume entry (saved as card)
 // @access         Private
-router.post("/", protect, validate(createResumeSchema), 
-
+router.post("/", protect, 
+  validate(createResumeSchema), 
 async (req: Request <any, any, CreateResumeBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {

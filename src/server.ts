@@ -1,8 +1,15 @@
+import logger from "./utils/logger";
+import { httpLogger } from "./middleware/loggerMiddleware";
+
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db';
 import cors from 'cors'; 
 import { errorHandler } from './middleware/errorHandler';
+import helmet from 'helmet';
+import compression from "compression";
+import hpp from "hpp";
+import mongoose from "mongoose";
 
 // RESUMES ROUTES IMPORT
 import analyzeRoutes from './routes/resumes/analyzeRoutes'
@@ -27,27 +34,58 @@ import cookieParser from "cookie-parser";
 //NODE CRON AUTO CLEAN UP
 import { scheduleCleanupTempResumes } from './cronJobs/cleanupTempResumes';
 
+
+// --------- CRASH HANDLERS -----------
+process.on("unhandledRejection", (reason) => {
+  logger.fatal({ reason }, "UNHANDLED REJECTION");
+  process.exit(1);
+});
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err }, "UNCAUGHT EXCEPTION");
+  process.exit(1);
+});
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to the database
+// Connect to the database and resume clean up
 connectDB();
-
 scheduleCleanupTempResumes();
 
+//  --------- MIDDLEWARE -----------
+app.use(helmet());// Security headers
+app.use(compression());// Compression for all responses
+app.use(hpp()); // protect query params
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-// CORS Configuration
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS || `http://localhost:3000`, // Adjust as needed
   credentials: true, //for allowing to send header value
   exposedHeaders: ["Content-Disposition"],
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(httpLogger);
 
+app.get("/api/health", async (req, res) => {
+  const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
+  const dbStatus = dbStates[mongoose.connection.readyState];
+
+  logger.info({ route: "/api/health", dbStatus, uptime: process.uptime() }, "Health check requested");
+
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    db: dbStatus,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+
+// AUTH
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleRoutes);
 
@@ -76,5 +114,5 @@ app.use(errorHandler);
 
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT}`);
 }); 

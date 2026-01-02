@@ -84,7 +84,7 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"),
 
 // @route          POST /api/job-application
 // @description    CREATE a new application entry (saved as card)
-// @access         Public (later protected by auth)
+// @access         Private
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
   if (!req.user) {
