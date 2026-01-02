@@ -87,18 +87,41 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"),
 // @access         Public (later protected by auth)
 router.get('/', protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    const data = await JobApplicationModel.find({
-      userId: req.user._id, 
-    }).sort({ createdAt: -1 }); //({ userId: req.user._id }).sort({ createdAt: -1 }) later filter by userId: req.user._id
-    
-    if (!data) {
-      return res.status(404).json({ error: "No Applications found" });
-    }
-    
-    res.status(200).json(data);
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { cursor, limit = 10, search } = req.query as {
+    cursor?: string;
+    limit?: string;
+    search?: string;
+  };
+
+  const query: any = { userId: req.user._id };
+
+  if (search) {
+    query.$or = [
+      { jobTitle: { $regex: search, $options: 'i' } },
+      { companyName: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  if (cursor) {
+    query._id = { $lt: cursor }; // use Mongo _id for cursor
+  }
+
+  const applications = await JobApplicationModel.find(query)
+    .sort({ _id: -1 })
+    .limit(Number(limit) + 1);
+
+  const hasNext = applications.length > Number(limit);
+  const nextCursor = hasNext ? applications[Number(limit)]._id : null;
+
+  res.status(200).json({
+    data: applications.slice(0, Number(limit)),
+    nextCursor,
+  });
+
   } catch (err) {
     next(err);
   }
