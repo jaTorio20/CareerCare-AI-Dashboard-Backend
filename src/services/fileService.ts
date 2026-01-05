@@ -1,7 +1,8 @@
 import mammoth from "mammoth";
 import {PDFParse} from "pdf-parse";
+import { ParsedFileInput } from "../types/file.types";
 
-export async function parseFile(file: Express.Multer.File): Promise<string> {
+export async function parseFile(file: ParsedFileInput): Promise<string> {
   if (!file || !file.buffer) {
     throw new Error("No file buffer provided");
   }

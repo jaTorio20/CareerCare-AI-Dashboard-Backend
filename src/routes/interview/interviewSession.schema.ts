@@ -10,7 +10,7 @@ const objectId = z
 
 // Allowed difficulty and status enums
 const difficultyEnum = ["easy", "medium", "hard", "none"] as const;
-const statusEnum = ["in-progress", "completed"] as const;
+// const statusEnum = ["in-progress", "completed"] as const;
 
 export const createInterviewSessionSchema = z.object({
   body: z.object({

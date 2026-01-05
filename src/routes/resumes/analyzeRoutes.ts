@@ -1,10 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { uploadMiddleware } from '../../middleware/uploadMiddleware';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
-import { parseFile } from '../../services/fileService';
-import { analyzeResume } from '../../services/aiService';
-import { ResumeModel } from '../../models/Resume';
 import { protect } from '../../middleware/authMiddleware';
+import { backgroundQueue } from '../../background/queues/background.queue';
 
 // VALIDATOR
 import { validate } from '../../middleware/validate';
@@ -18,7 +16,7 @@ const router = express.Router();
 // @access          Public
 router.post("/", protect, uploadMiddleware.single("resumeFile"),
 validate(uploadResumeSchema),
- async (req: Request, res: Response, next: NextFunction) => {
+ async (req: Request<any, any, UploadResumeBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -41,31 +39,29 @@ validate(uploadResumeSchema),
     // Upload to Cloudinary
     const uploadResult = await uploadToCloudinary(req.file.buffer, "resumes/temp"); //resumes folder
 
-    // Parse file
-    const resumeText = await parseFile(req.file);
+    // ENQUEUE BACKGROUND JOB
+    await backgroundQueue.add(
+      "resume-analysis",
+      {
+        userId: req.user._id,
+        fileBuffer: req.file.buffer.toString("base64"),
+        mimetype: req.file.mimetype,
+        originalName: req.file.originalname,
+        cloudinary: {
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+        },
+        jobDescription: req.body.jobDescription,
+      },
+      {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 3000 },
+        removeOnComplete: true,
+      }
+    );
 
-    const { jobDescription }: UploadResumeBody = req.body;
-    // Run AI analysis
-    const analysis = await analyzeResume(resumeText, jobDescription);
-
-      // Save TEMP record in DB
-    const tempResume = new ResumeModel({
-      userId: req.user._id, // later replace with req.user._id
-      resumeFile: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-      originalName: req.file.originalname,
-      jobDescription: req.body.jobDescription,
-      analysis,
-      isTemp: true //mark as temporary
-    });
-    await tempResume.save();
-
-    res.status(201).json({
-      resumeFile: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-      originalName: req.file.originalname,
-      jobDescription: req.body.jobDescription,
-      analysis,  
+    res.status(202).json({
+      message: "Resume uploaded. Analysis is processing in background.",
     });
   } catch (err: any) {
     next(err)

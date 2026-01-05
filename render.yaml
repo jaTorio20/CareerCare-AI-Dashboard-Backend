@@ -1,0 +1,82 @@
+services:
+  - type: web
+    name: CareerCare-AI-Dashboard-Backend
+    env: node
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: BASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+        #DB CONNECTION
+      - key: MONGO_URI
+        sync: false
+
+        # FOR FILE UPLOAD
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+        # FOR AI SERVICES
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+
+        # AUTH SERVICES
+      - key: JWT_SECRET
+        sync: false 
+
+        # FOR SENDING EMAIL
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_NAME
+        sync: false
+
+        # GOOGLE AUTH
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+        # BACKBLAZE FOR AUDIO FILE STORAGE
+      - key: B2_KEY_ID
+        sync: false
+      - key: B2_APP_KEY
+        sync: false
+      - key: B2_BUCKET
+        sync: false
+
+        # BACKGROUND WORKER
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false        
+
+  - type: worker
+    name: CareerCare-AI-Background-Worker
+    env: node
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: node src/background/workers/background.worker.js
+    envVars:
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false

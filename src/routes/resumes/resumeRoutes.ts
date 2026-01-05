@@ -12,6 +12,37 @@ import { CreateResumeBody, DeleteResumeParams } from "./resume.schema";
 
 const router = express.Router();
 
+// @route          GET /api/resumes/temp
+// @description    Fetch latest temp resume with analysis
+// @access         Private
+router.get("/temp", protect, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const tempResume = await ResumeModel.findOne({
+      userId: req.user._id,
+      isTemp: true,
+    }).sort({ createdAt: -1 });
+
+    if (!tempResume) {
+      return res.status(404).json({ message: "No temp resume found" });
+    }
+
+    res.json({
+      resumeFile: tempResume.resumeFile,
+      publicId: tempResume.publicId,
+      originalName: tempResume.originalName,
+      jobDescription: tempResume.jobDescription,
+      analysis: tempResume.analysis,
+    });
+  } catch (err) {
+    console.error("Failed to fetch temp resume", err);
+    res.status(500).json({ error: "Failed to fetch temp resume" });
+  }
+});
+
 // @route          GET /api/resumes/:id/download
 // @description    Download resume file with original filename
 // @access         Private
