@@ -1,12 +1,10 @@
 import { Worker } from "bullmq";
 import { redis } from "../../lib/redis";
 import { jobHandlers } from "../jobs";
-import connectDB from "../../config/db";
+// import connectDB from "../../config/db";
 
-(async () => {
-  // Connect to MongoDB first
-  await connectDB();
-
+export const startWorker = async () => {
+//  await connectDB();
   const worker = new Worker(
     "background-jobs",
     async job => {
@@ -26,4 +24,4 @@ import connectDB from "../../config/db";
   worker.on("failed", (job, err) =>
     console.error(`Job ${job?.id} failed`, err)
   );
-})();
+};
