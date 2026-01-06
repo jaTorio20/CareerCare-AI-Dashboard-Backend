@@ -4,6 +4,7 @@ import { ResumeModel } from "../../../models/Resume";
 
 export async function handleResumeAnalysisJob(data: any) {
   const {
+    jobId,
     userId,
     fileBuffer,
     mimetype,
@@ -27,6 +28,7 @@ export async function handleResumeAnalysisJob(data: any) {
   // Save TEMP record
   await ResumeModel.create({
     userId,
+    jobId,
     resumeFile: cloudinary.url,
     publicId: cloudinary.publicId,
     originalName,

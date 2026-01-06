@@ -11,6 +11,9 @@ import compression from "compression";
 import hpp from "hpp";
 import mongoose from "mongoose";
 
+// BACKGROUND WORKER
+import { startWorker } from "./background/workers/background.worker";
+
 // RESUMES ROUTES IMPORT
 import analyzeRoutes from './routes/resumes/analyzeRoutes'
 import resumeRoutes from './routes/resumes/resumeRoutes';
@@ -51,8 +54,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to the database and resume clean up
-connectDB();
-scheduleCleanupTempResumes();
+// connectDB();
+// scheduleCleanupTempResumes();
 
 //  --------- MIDDLEWARE -----------
 app.use(helmet());// Security headers
@@ -113,6 +116,22 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 
-app.listen(PORT, () => {
-    logger.info(`Server is running on port ${PORT}`);
-}); 
+async function bootstrap() {
+  await connectDB();
+
+  if (process.env.START_WORKER === "true") {
+    await startWorker();
+    logger.info("Background worker started");
+  }
+
+  scheduleCleanupTempResumes();
+
+  app.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`);
+  });
+}
+
+bootstrap().catch((err) => {
+  logger.fatal(err, "Failed to start server");
+  process.exit(1);
+});

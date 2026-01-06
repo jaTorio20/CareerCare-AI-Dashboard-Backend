@@ -3,6 +3,7 @@ import { uploadMiddleware } from '../../middleware/uploadMiddleware';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
 import { protect } from '../../middleware/authMiddleware';
 import { backgroundQueue } from '../../background/queues/background.queue';
+import crypto from "crypto";
 
 // VALIDATOR
 import { validate } from '../../middleware/validate';
@@ -18,6 +19,8 @@ router.post("/", protect, uploadMiddleware.single("resumeFile"),
 validate(uploadResumeSchema),
  async (req: Request<any, any, UploadResumeBody>, res: Response, next: NextFunction) => {
   try {
+    const jobId = crypto.randomUUID();
+    
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -42,7 +45,8 @@ validate(uploadResumeSchema),
     // ENQUEUE BACKGROUND JOB
     await backgroundQueue.add(
       "resume-analysis",
-      {
+      { 
+        jobId,
         userId: req.user._id,
         fileBuffer: req.file.buffer.toString("base64"),
         mimetype: req.file.mimetype,
@@ -51,16 +55,17 @@ validate(uploadResumeSchema),
           url: uploadResult.secure_url,
           publicId: uploadResult.public_id,
         },
-        jobDescription: req.body.jobDescription,
+        jobDescription: req.body.jobDescription ?? "",
       },
       {
-        attempts: 3,
+        attempts: 1,
         backoff: { type: "exponential", delay: 3000 },
         removeOnComplete: true,
       }
     );
 
     res.status(202).json({
+      jobId,
       message: "Resume uploaded. Analysis is processing in background.",
     });
   } catch (err: any) {

@@ -6,6 +6,11 @@ const ResumeSchema = new Schema({
     ref: "User", 
     required: true, 
   },
+  jobId: { 
+    type: String, 
+    required: false, 
+    index: true 
+  },
   resumeFile: { type: String, 
     required: true 
   },

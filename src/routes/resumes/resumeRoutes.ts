@@ -2,10 +2,9 @@ import express, { Request, Response, NextFunction } from "express";
 import { ResumeModel } from "../../models/Resume";
 import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
 import { protect } from "../../middleware/authMiddleware";
 
-//VALIDATOR
+//VALIDATION
 import { validate } from "../../middleware/validate";
 import { createResumeSchema, deleteResumeSchema } from "./resume.schema";
 import { CreateResumeBody, DeleteResumeParams } from "./resume.schema";
@@ -20,9 +19,15 @@ router.get("/temp", protect, async (req: Request, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+    const { jobId } = req.query;
+
+    if (!jobId) {
+      return res.status(400).json({ error: "jobId is required" });
+    }
 
     const tempResume = await ResumeModel.findOne({
       userId: req.user._id,
+      jobId,
       isTemp: true,
     }).sort({ createdAt: -1 });
 
@@ -87,37 +92,34 @@ router.get("/:id/download", protect, async (req: Request, res: Response, next: N
 router.post("/", protect, 
   validate(createResumeSchema), 
 async (req: Request <any, any, CreateResumeBody>, res: Response, next: NextFunction) => {
-  try {
+ 
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    // Expect JSON body: { userId, resumeFile, jobDescription, analysis }
-    const { publicId, originalName, jobDescription, analysis } = req.body;
+    const { publicId, originalName, jobDescription, analysis, jobId } = req.body;
 
     if (!publicId || !originalName) {
       return res.status(400).json({ error: "resumeFile (Cloudinary publicId + originalName) is required" });
     }
-    const uniqueId = uuidv4();
-    // Generate a new permanent publicId
-    const newPublicId = `resumes/${uniqueId}_${Date.now()}_${originalName}`;
 
-    // Rename/move the file in Cloudinary
-    const renameResult = await cloudinary.uploader.rename(publicId, newPublicId, {
-      resource_type: "raw",
-      overwrite: false, // prevent accidental overwrite
-    });
+    const tempResume = await ResumeModel.findOne({ publicId: req.body.publicId, isTemp: true });
+    if (!tempResume) return res.status(404).json({ error: "Temporary resume not found" });
+
+    if (!req.user?._id) return res.status(401).json({ error: "User not found" });
+    if (!tempResume?.resumeFile) return res.status(400).json({ error: "Resume file missing" });
 
     // Save permanent record in DB
     const newResume = new ResumeModel({
       userId: req.user._id,
-      resumeFile: renameResult.secure_url, // permanent link
-      publicId: renameResult.public_id,    // permanent ID
+      jobId,
+      resumeFile: tempResume.resumeFile,
+      publicId: tempResume.publicId,
       originalName,
       jobDescription,
       analysis,
       isTemp: false,
     });
-
+ try {
     await newResume.save();
     res.status(201).json(newResume);
   } catch (err) {

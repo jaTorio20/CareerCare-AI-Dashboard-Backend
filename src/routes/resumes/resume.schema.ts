@@ -9,8 +9,9 @@ const objectId = z
 
 export const createResumeSchema = z.object({
   body: z.object({
-    publicId: z.string().min(1),
-    originalName: z.string().min(1),
+    publicId: z.string().min(1, "Cloudinary publicId is required"),
+    originalName: z.string().min(1, "Original resume file name is required"),
+    jobId: z.string().optional(), 
     jobDescription: z.string().optional(),
     analysis: z
       .object({
