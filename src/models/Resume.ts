@@ -1,5 +1,23 @@
 import mongoose, { Schema, InferSchemaType } from "mongoose";
 
+const AnalysisSchema = new Schema({
+  atsScore: { type: Number, min: 0, max: 100 },
+  formatIssues: { type: [String], default: [] },
+  keywordMatchPercentage: { type: Number, min: 0, max: 100 },
+  missingKeywords: { type: [String], default: [] },
+  strengthKeywords: { type: [String], default: [] },
+  improvementSuggestions: {
+    type: [
+      {
+        _id: false,
+        priority: { type: String, enum: ["high", "medium", "low"], required: true },
+        message: { type: String, required: true },
+      },
+    ],
+    default: [],
+  },
+});
+
 const ResumeSchema = new Schema({
   userId: { 
     type: Schema.Types.ObjectId, 
@@ -20,38 +38,19 @@ const ResumeSchema = new Schema({
   },  
   jobDescription: { 
     type: String,
-    required: false 
+    required: false,
+    maxlength: 2000, 
   },
   originalName: {
      type: String, 
      required: true 
   }, 
-  analysis: {
-    atsFriendly: { 
-      type: Boolean,
-      default: false 
-    },
-    atsSuggestions: { 
-      type: [String], 
-      default: [] 
-    },
-    jobFitPercentage: {
-      type: Number, 
-      min: 0, 
-      max: 100 
-    },
-    jobFitSuggestions: { 
-      type: [String], 
-      default: [] 
-    },
-  },
+  analysis: { type: AnalysisSchema, default: {},  _id: false },
   isTemp: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Infer TypeScript type directly from schema
+
 export type Resume = InferSchemaType<typeof ResumeSchema>;
 
-// // For updates, all fields are optional
-// export type ResumeUpdate = Partial<Resume>;
+export const ResumeModel = mongoose.models.Resume || mongoose.model<Resume>("Resume", ResumeSchema);
 
-export const ResumeModel = mongoose.model<Resume>("Resume", ResumeSchema);

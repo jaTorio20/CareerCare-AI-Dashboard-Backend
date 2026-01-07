@@ -9,28 +9,54 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
   const model = client.getGenerativeModel({ model: `${process.env.GEMINI_MODEL}` });
 
   const prompt = jobDescription
-    ? `You are an ATS resume analyzer.
+    ? `You are an ATS (Applicant Tracking System) resume analyzer.
        Resume: ${resumeText}
        Job Description: ${jobDescription}
 
-       Return ONLY valid JSON with the following fields:
-       {
-         "atsFriendly": boolean,
-         "atsSuggestions": string[],
-         "jobFitPercentage": number,
-         "jobFitSuggestions": string[]
-       }
+       Evaluate:
+      - Resume formatting and structure for ATS parsing
+      - Keyword matching against the job description
+      - Missing or weak keywords
+      - Overall ATS compatibility
+
+       Return ONLY valid JSON with the following format:
+      
+      {
+        "atsScore": number, // 0-100 based on formatting and structure
+        "formatIssues": string[],
+        "keywordMatchPercentage": number, // 0-100
+        "missingKeywords": string[],
+        "strengthKeywords": string[],
+        "improvementSuggestions": [
+          {
+            "priority": "high" | "medium" | "low",
+            "message": string
+          }
+        ]
+      }
 
        Do not include code fences, markdown, or any text outside the JSON.`
-    : `You are an ATS resume analyzer.
+    : `
+      You are an ATS (Applicant Tracking System) resume analyzer.
        Resume: ${resumeText}
 
+       Evaluate:
+      - ATS readability and structure
+      - Formatting issues that may break parsing
+      - Keyword clarity and section labeling
+
        Return ONLY valid JSON with the following fields:
-       {
-         "atsFriendly": boolean,
-         "atsSuggestions": string[],
-          "jobFitPercentage": number
-       }
+      {
+        "atsScore": number, // 0-100
+        "formatIssues": string[],
+        "improvementSuggestions": [
+          {
+            "priority": "high" | "medium" | "low",
+            "message": string
+          }
+        ]
+      }
+
 
        Do not include code fences, markdown, or any text outside the JSON.`;
 
@@ -48,10 +74,12 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
 
   // Normalize shape
   return {
-    atsFriendly: parsed.atsFriendly ?? false,
-    atsSuggestions: parsed.atsSuggestions ?? [],
-    jobFitPercentage: parsed.jobFitPercentage ?? 0,
-    jobFitSuggestions: parsed.jobFitSuggestions ?? [],
+    atsScore: parsed.atsScore ?? 0,
+    formatIssues: parsed.formatIssues ?? [],
+    keywordMatchPercentage: parsed.keywordMatchPercentage ?? 0,
+    missingKeywords: parsed.missingKeywords ?? [],
+    strengthKeywords: parsed.strengthKeywords ?? [],
+    improvementSuggestions: parsed.improvementSuggestions ?? [],
   }
   } catch (err: any) {
      throw new Error("Gemini did not return valid JSON");

@@ -11,16 +11,27 @@ export const createResumeSchema = z.object({
   body: z.object({
     publicId: z.string().min(1, "Cloudinary publicId is required"),
     originalName: z.string().min(1, "Original resume file name is required"),
-    jobId: z.string().optional(), 
-    jobDescription: z.string().optional(),
-    analysis: z
-      .object({
-        atsFriendly: z.boolean().optional(),
-        atsSuggestions: z.array(z.string()).optional(),
-        jobFitPercentage: z.number().min(0).max(100).optional(),
-        jobFitSuggestions: z.array(z.string()).optional(),
-      })
-      .optional(),
+    jobId: z.string().optional(),
+    jobDescription: z.string().max(2000, "Job description cannot exceed 2000 characters").optional(),
+
+    analysis: z.object({
+      atsScore: z.number().min(0).max(100).optional(),
+
+      formatIssues: z.array(z.string()),
+
+      keywordMatchPercentage: z.number().min(0).max(100).optional(),
+
+      missingKeywords: z.array(z.string()).optional(),
+
+      strengthKeywords: z.array(z.string()).optional(),
+
+      improvementSuggestions: z.array(
+        z.object({
+          priority: z.enum(["high", "medium", "low"]),
+          message: z.string().min(1),
+        })
+      ),
+    }),
   }),
 });
 
