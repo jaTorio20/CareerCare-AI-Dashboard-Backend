@@ -4,6 +4,7 @@ import { uploadToCloudinary } from '../../services/cloudinaryService';
 import { protect } from '../../middleware/authMiddleware';
 import { backgroundQueue } from '../../background/queues/background.queue';
 import crypto from "crypto";
+import { ResumeModel } from '../../models/Resume';
 
 // VALIDATOR
 import { validate } from '../../middleware/validate';
@@ -42,20 +43,25 @@ validate(uploadResumeSchema),
     // Upload to Cloudinary
     const uploadResult = await uploadToCloudinary(req.file.buffer, "resumes/temp"); //resumes folder
 
+    // Create temp DB record immediately
+    const tempResume = await ResumeModel.create({
+      userId: req.user._id,
+      jobId,
+      resumeFile: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      originalName: req.file.originalname,
+      jobDescription: req.body.jobDescription ?? "",
+      analysis: null,
+      isTemp: true,
+    });
+
     // ENQUEUE BACKGROUND JOB
     await backgroundQueue.add(
       "resume-analysis",
       { 
-        jobId,
-        userId: req.user._id,
+        resumeId: tempResume._id,
         fileBuffer: req.file.buffer.toString("base64"),
         mimetype: req.file.mimetype,
-        originalName: req.file.originalname,
-        cloudinary: {
-          url: uploadResult.secure_url,
-          publicId: uploadResult.public_id,
-        },
-        jobDescription: req.body.jobDescription ?? "",
       },
       {
         attempts: 1,

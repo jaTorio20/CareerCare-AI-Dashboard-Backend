@@ -93,9 +93,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleRoutes);
 
 // RESUMES
-app.use('/api/resumes', resumeRoutes);
 app.use('/api/resumes/temp', tempRoutes);
 app.use('/api/resumes/analyze', analyzeRoutes);
+app.use('/api/resumes', resumeRoutes);
 
 //COVER LETTER
 app.use('/api/cover-letter', generateLetterRoutes);
