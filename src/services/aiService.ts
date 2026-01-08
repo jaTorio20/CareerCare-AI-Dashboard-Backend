@@ -91,53 +91,62 @@ export async function analyzeResume(resumeText: string, jobDescription?: string)
 export async function generateCoverLetter(jobDescription: string, jobTitle: string, companyName: string, userDetails?: string) {
   type CoverLetterResponse = { generatedLetter: string };
     const model = client.getGenerativeModel({ model: `${process.env.GEMINI_MODEL}` });
-    const prompt = userDetails 
-      ? `You are a professional career assistant.
-          Using the job description and my personal details, write a tailored cover letter for the job application.
-          At the very top of the cover letter, include ONLY my personal details block (name, address, email, phone, LinkedIn, GitHub, Portfolio, Date).
-          
-          - Each detail must be wrapped in its own <p> tag so TipTap renders them as separate lines.
-          - Do NOT include company details (Hiring Manager, company name, company address) in the personal details block.
-          - Email and phone MUST always be included. If not provided, use safe placeholders:
-            email@example.com
-            +63 XXX XXX XXXX
-          - Use realistic placeholders for other missing fields (e.g., "linkedin.com/in/example", "github.com/example", "portfolio.example.com").
-          - Personal Details and the Body should only use one <p> per line, to avoid over enter spacing.
+      const prompt = userDetails 
+        ? `You are a professional career assistant.
+      Using the job description and my personal details, write a professional, tailored cover letter for a job application.
 
-          Job Description: ${jobDescription}
-          Job Company Name: ${companyName}
-          Job Position: ${jobTitle}
-          My Details: ${userDetails}
+      Instructions:
+      - At the very top, include ONLY my personal details: Name, Address, Email, Phone, LinkedIn, GitHub, Portfolio, Date.
+        - Each detail must be on its own line (single newline, no extra spacing).
+        - Do NOT include company or hiring manager details in this block.
+        - If Email or Phone is missing, use safe placeholders:
+          email@example.com
+          +63 XXX XXX XXXX
+        - For other missing fields, use realistic placeholders (LinkedIn, GitHub, Portfolio).
+      - Below the personal details block, write the cover letter body:
+        - Start with "Dear Hiring Manager," on its own line.
+        - Opening paragraph: express interest and fit for the role.
+        - Middle paragraph(s): highlight 2-3 relevant skills, achievements, or experience.
+        - Closing paragraph: thank the reader, mention your resume, express interest in discussing further.
+      - Each paragraph in the body must be separated by a single newline.
+      - Avoid extra empty lines between paragraphs.
+      - Return ONLY valid JSON with the following structure:
 
-          Return ONLY valid JSON with the following fields:
-          {
-            "generatedLetter": string
-          }
-          
-          Do not include code fences, markdown, or any text outside the JSON.`
+      {
+        "generatedLetter": "string"
+      }
+
+      Do not include markdown, HTML tags, code fences, or any text outside the JSON.
+
+      Job Description: ${jobDescription}
+      Company Name: ${companyName}
+      Job Position: ${jobTitle}
+      My Details: ${userDetails}`
       : `You are a professional career assistant.
-          Using the job description, write a tailored cover letter for the job application.
-          At the very top of the cover letter, invent ONLY a professional personal details block (name, address, email, phone, LinkedIn, GitHub, Portfolio, Date).
-          
-          - Each detail must be wrapped in its own <p> tag so TipTap renders them as separate lines.
-          - Do NOT include company details (Hiring Manager, company name, company address) in the personal details block.
-          - Email and phone MUST always be included using safe placeholders if not available:
-            email@example.com
-            +63 XXX XXX XXXX
-          - Use realistic placeholders for other missing fields (e.g., "linkedin.com/in/example", "github.com/example", "portfolio.example.com").
-          - Personal Details and the Body should only use one <p> per line, to avoid over enter spacing.
+      Using the job description, write a professional, tailored cover letter for a job application.
+      Invent a professional personal details block at the top (Name, Address, Email, Phone, LinkedIn, GitHub, Portfolio, Date).
 
-          Job Description: ${jobDescription}
-          Company Name: ${companyName}          
-          Job Position: ${jobTitle}
+      Instructions:
+      - Personal details block: each detail on its own line (single newline).
+      - Cover letter body: start with "Dear Hiring Manager," on its own line.
+        - Opening paragraph: express interest and fit for the role.
+        - Middle paragraph(s): highlight 2-3 relevant skills, achievements, or experience.
+        - Closing paragraph: thank the reader, mention resume, express interest in discussing further.
+      - Avoid extra empty lines between paragraphs.
+      - Use realistic placeholders if fields are missing.
+      - Return ONLY valid JSON:
+
+      {
+        "generatedLetter": "string"
+      }
+
+      Do not include markdown, HTML tags, code fences, or any text outside the JSON.
+
+      Job Description: ${jobDescription}
+      Company Name: ${companyName}
+      Job Position: ${jobTitle}`;
 
 
-          Return ONLY valid JSON with the following fields:
-          {
-            "generatedLetter": string
-          }
-
-          Do not include code fences, markdown, or any text outside the JSON.`;
 
 
 
