@@ -154,8 +154,6 @@ router.post(
   }
 );
 
-
-
 router.get("/sessions/:id/messages", protect, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
@@ -184,26 +182,31 @@ router.delete("/sessions/:id", protect,
   async (req: Request<DeleteInterviewSessionParams, any, any>, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    // Messages are deleted automatically by schema.pre inside InterviewSessionModel
+    
+    // Fetch messages BEFORE deleting the session
+    const messages = await InterviewMessageModel.find({ sessionId: id });
+    
+    // Extract audioUrls before messages are deleted
+    const audioUrls = messages
+      .map((msg) => msg.audioUrl)
+      .filter((url): url is string => Boolean(url));
+
+    // Delete the session
     const session = await InterviewSessionModel.findOneAndDelete({ _id: id });
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // Deleting all audio files tied to session schema in Backblaze: 
-    const messages = await InterviewMessageModel.find({ sessionId: id });
-
+    // Delete all audio files from Backblaze using the stored audioUrls
     const failedDeletes: string[] = [];
 
     await Promise.all(
-      messages.map(async (msg) => {
-        if (msg.audioUrl) {
-          try {
-            await deleteAudioFromB2(msg.audioUrl);
-          } catch (err) {
-            console.error(`Failed to delete audio ${msg.audioUrl}:`, err);
-            failedDeletes.push(msg.audioUrl);
-          }
+      audioUrls.map(async (audioUrl) => {
+        try {
+          await deleteAudioFromB2(audioUrl);
+        } catch (err) {
+          console.error(`Failed to delete audio ${audioUrl}:`, err);
+          failedDeletes.push(audioUrl);
         }
       })
     );
@@ -211,7 +214,6 @@ router.delete("/sessions/:id", protect,
     if (failedDeletes.length) {
       console.warn("Some audio files could not be deleted:", failedDeletes);
     }
-
 
     res.json({ message: "Session delete" });
   } catch (err) {

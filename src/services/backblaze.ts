@@ -1,7 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import fs from "fs";
-import { Readable } from "stream";
+import { v4 as uuid } from "uuid"
 
 export const s3 = new S3Client({
   region: "us-east-005",
@@ -13,7 +12,7 @@ export const s3 = new S3Client({
 });
 
 export async function uploadAudioToB2(file: Express.Multer.File) {
-  const key = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`;
+  const key = `${uuid()}-${file.originalname.replace(/\s+/g, "_")}`;
 
   await s3.send(
     new PutObjectCommand({
