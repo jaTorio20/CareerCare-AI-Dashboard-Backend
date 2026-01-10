@@ -17,6 +17,10 @@ const JobApplicationSchema = new Schema({
   jobLink: { 
     type: String 
   },
+  jobDescription: {
+    type: String,
+    maxlength: 2000, 
+  },
   status: { 
     type: String, 
     enum: ['applied', 'interview', 'offer', 'rejected', 'accepted'], 

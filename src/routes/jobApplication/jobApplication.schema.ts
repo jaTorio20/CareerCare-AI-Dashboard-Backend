@@ -17,7 +17,8 @@ export const createJobApplicationSchema = z.object({
   body: z.object({
     companyName: z.string().min(1, "companyName is required"),
     jobTitle: z.string().min(1, "jobTitle is required"),
-    jobLink: z.string().url("jobLink must be a valid URL").optional(),
+    jobLink: z.url("jobLink must be a valid URL").optional(),
+    jobDescription: z.string().max(2000, "Job description cannot exceed 2000 characters").optional(),
     status: z.enum(statusEnum).optional(),
     location: z.enum(locationEnum).optional(),
     notes: z.string().optional(),
@@ -38,7 +39,8 @@ export const updateJobApplicationSchema = z.object({
   body: z.object({
     companyName: z.string().min(1, "companyName is required").optional(),
     jobTitle: z.string().min(1, "jobTitle is required").optional(),
-    jobLink: z.string().url("jobLink must be a valid URL").optional(),
+    jobLink: z.url("jobLink must be a valid URL").optional(),
+    jobDescription: z.string().max(2000, "Job description cannot exceed 2000 characters").optional(),
     status: z.enum(statusEnum).optional(),
     location: z.enum(locationEnum).optional(),
     notes: z.string().optional(),

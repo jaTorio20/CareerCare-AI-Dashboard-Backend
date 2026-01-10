@@ -13,7 +13,6 @@ export const s3 = new S3Client({
 
 export async function uploadAudioToB2(file: Express.Multer.File) {
   const key = `${uuid()}-${file.originalname.replace(/\s+/g, "_")}`;
-
   await s3.send(
     new PutObjectCommand({
       Bucket: process.env.B2_BUCKET!,
@@ -27,7 +26,6 @@ export async function uploadAudioToB2(file: Express.Multer.File) {
 
   return key;
 }
-
 
 export async function getAudioSignedUrl(key: string) {
   const command = new GetObjectCommand({
@@ -46,9 +44,5 @@ export async function deleteAudioFromB2(key: string) {
   );
 }
 
-// export function extractKeyFromUrl(url: string): string {
-//   const parts = url.split("/");
-//   return parts.slice(5).join("/"); // everything after /file/<bucket>/
-// }
 
 

@@ -21,7 +21,7 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"),
   validate(createJobApplicationSchema),
   async (req: Request<any, any, CreateJobApplicationBody>, res: Response, next: NextFunction) => {
     try {
-      const { companyName, jobTitle, 
+      const { companyName, jobTitle, jobDescription,
         jobLink, status, location, notes, salaryRange} = req.body || {};
 
       if (!req.user) {
@@ -66,6 +66,7 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"),
         companyName,
         jobTitle,
         jobLink,
+        jobDescription,
         status,
         location,
         notes,
@@ -219,7 +220,7 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"),
       }
       
       const {companyName, jobTitle, 
-            jobLink, status, location, notes, salaryRange} = req.body || {};
+            jobLink, jobDescription, status, location, notes, salaryRange} = req.body || {};
             
       if (!jobTitle?.trim() || !companyName?.trim() ){
         res.status(400);
@@ -229,6 +230,7 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"),
       jobApplication.companyName = companyName;
       jobApplication.jobTitle = jobTitle;
       if (jobLink !== undefined) jobApplication.jobLink = jobLink;
+      if (jobDescription !== undefined) jobApplication.jobDescription = jobDescription;
       if (status !== undefined) jobApplication.status = status;
       if (location !== undefined) jobApplication.location = location;
       if (notes !== undefined) jobApplication.notes = notes;
