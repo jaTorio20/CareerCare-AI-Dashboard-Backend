@@ -1,10 +1,18 @@
 import { Worker } from "bullmq";
 import { redis } from "../../lib/redis";
 import { jobHandlers } from "../jobs";
+import { checkRedisQuota } from "../../lib/checkRedisQuota";
 // import connectDB from "../../config/db";
 
 export const startWorker = async () => {
 //  await connectDB();
+
+const quota = await checkRedisQuota(); 
+  if (quota.exceeded) { 
+    console.warn("Redis quota exceeded. Worker not started, inline processing only."); 
+    return null; // signal to bootstrap that no worker is running 
+  }
+
   const worker = new Worker(
     "background-jobs",
     async job => {
@@ -24,4 +32,10 @@ export const startWorker = async () => {
   worker.on("failed", (job, err) =>
     console.error(`Job ${job?.id} failed`, err)
   );
+
+  worker.on("error", err => { 
+    console.error("BullMQ Worker error:", err.message); 
+  }); 
+
+  return worker;
 };

@@ -2,9 +2,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import { uploadMiddleware } from '../../middleware/uploadMiddleware';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
 import { protect } from '../../middleware/authMiddleware';
-import { backgroundQueue } from '../../background/queues/background.queue';
 import crypto from "crypto";
 import { ResumeModel } from '../../models/Resume';
+import { processJob } from '../../background/jobProcessor';
 
 // VALIDATOR
 import { validate } from '../../middleware/validate';
@@ -56,23 +56,19 @@ validate(uploadResumeSchema),
     });
 
     // ENQUEUE BACKGROUND JOB
-    await backgroundQueue.add(
+    const result = await processJob(
       "resume-analysis",
       { 
         resumeId: tempResume._id,
         fileBuffer: req.file.buffer.toString("base64"),
         mimetype: req.file.mimetype,
-      },
-      {
-        attempts: 1,
-        backoff: { type: "exponential", delay: 3000 },
-        removeOnComplete: true,
       }
     );
 
-    res.status(202).json({
+    res.status(result.queued ? 202 : 200).json({
       jobId,
-      message: "Resume uploaded. Analysis is processing in background.",
+      message: result.queued ? "Resume uploaded. Analysis is processing in background." 
+      : "Resume uploaded. Analysis is processing inline.",
     });
   } catch (err: any) {
     next(err)

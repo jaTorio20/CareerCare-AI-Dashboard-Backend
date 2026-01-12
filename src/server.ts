@@ -120,8 +120,12 @@ async function bootstrap() {
   await connectDB();
 
   if (process.env.START_WORKER === "true") {
-    await startWorker();
-    logger.info("Background worker started");
+    const worker = await startWorker(); 
+    if (worker) { 
+      logger.info("Background worker started"); 
+    } else { 
+      logger.info("Running in inline mode (no worker)"); 
+    }
   }
 
   scheduleCleanupTempResumes();
