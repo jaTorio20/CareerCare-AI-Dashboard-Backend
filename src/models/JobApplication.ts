@@ -19,7 +19,7 @@ const JobApplicationSchema = new Schema({
   },
   jobDescription: {
     type: String,
-    maxlength: 2000, 
+    maxlength: 4000, 
   },
   status: { 
     type: String, 

@@ -12,7 +12,7 @@ export const createResumeSchema = z.object({
     publicId: z.string().min(1, "Cloudinary publicId is required"),
     originalName: z.string().min(1, "Original resume file name is required"),
     jobId: z.string().optional(),
-    jobDescription: z.string().max(2000, "Job description cannot exceed 2000 characters").optional(),
+    jobDescription: z.string().max(4000, "Job description cannot exceed 4000 characters").optional(),
 
     analysis: z.object({
       atsScore: z.number().min(0).max(100).optional(),

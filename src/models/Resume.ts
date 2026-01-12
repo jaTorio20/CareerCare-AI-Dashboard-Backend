@@ -39,7 +39,7 @@ const ResumeSchema = new Schema({
   jobDescription: { 
     type: String,
     required: false,
-    maxlength: 2000, 
+    maxlength: 4000, 
   },
   originalName: {
      type: String, 

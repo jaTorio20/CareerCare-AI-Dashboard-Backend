@@ -9,7 +9,10 @@ const objectId = z
 
 export const generateCoverLetterSchema = z.object({
   body: z.object({
-    jobDescription: z.string().min(1, "jobDescription is required"),
+    jobDescription: z
+    .string()
+    .min(1, "jobDescription is required")
+    .max(4000, "jobDescription must not exceed 4000 characters"),
     jobTitle: z.string().min(1, "jobTitle is required"),
     companyName: z.string().min(1, "companyName is required"),
     userDetails: z.string().optional(),
@@ -34,7 +37,10 @@ export const updateCoverLetterSchema = z.object({
   body: z.object({
     jobTitle: z.string().min(1, "jobTitle is required"),
     companyName: z.string().min(1, "companyName is required"),
-    jobDescription: z.string().min(1, "jobDescription is required"),
+    jobDescription: z
+    .string()
+    .min(1, "jobDescription is required")
+    .max(4000, "jobDescription must not exceed 4000 characters"),
     editedLetter: z.string().min(1, "editedLetter is required"),
   }),
 });
