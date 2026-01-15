@@ -45,7 +45,7 @@ validate(uploadResumeSchema),
 
     // Create temp DB record immediately
     const tempResume = await ResumeModel.create({
-      userId: req.user._id,
+      userId: req.user!._id,
       jobId,
       resumeFile: uploadResult.secure_url,
       publicId: uploadResult.public_id,

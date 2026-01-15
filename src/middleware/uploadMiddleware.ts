@@ -1,24 +1,42 @@
 import multer from "multer";
-import path from "path";
+import { Request, Response, NextFunction } from "express";
 
 export const uploadMiddleware = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       "application/pdf",
       "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true as any); // accept file
-    } else {
-      cb(new Error("Unsupported file type") as any, false); // reject file
+    if (!file.mimetype || !allowedTypes.includes(file.mimetype)) {
+      const err: any = new Error("Unsupported file type");
+      err.code = "UNSUPPORTED_FILE";
+      return cb(err);
     }
+
+    cb(null, true);
   },
 });
 
+export const uploadSingle = (fieldName: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    uploadMiddleware.single(fieldName)(req, res, (err: any) => {
+      if (err) {
+        if (err.code === "UNSUPPORTED_FILE") {
+          return res.status(400).json({ error: "Unsupported file type" });
+        }
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ error: "File too large" });
+        }
+        return next(err);
+      }
+      next();
+    });
+  };
+}
 
 export const upload = multer({
   storage: multer.memoryStorage(),

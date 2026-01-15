@@ -3,7 +3,7 @@ import { JobApplicationModel } from '../../models/JobApplication';
 import mongoose from 'mongoose';
 import { v2 as cloudinary} from 'cloudinary'
 import {uploadToCloudinaryJobApplication} from '../../services/cloudinaryService';
-import { uploadMiddleware } from '../../middleware/uploadMiddleware';
+import { uploadSingle } from '../../middleware/uploadMiddleware';
 import axios from "axios";
 import { protect } from '../../middleware/authMiddleware';
 
@@ -17,7 +17,7 @@ const router = express.Router();
 // @route          POST /api/job-application
 // @description    CREATE a new application entry (saved as card)
 // @access         Public (later protected by auth)
-router.post('/', protect, uploadMiddleware.single("resumeFile"), 
+router.post('/', protect, uploadSingle("resumeFile"), 
   validate(createJobApplicationSchema),
   async (req: Request<any, any, CreateJobApplicationBody>, res: Response, next: NextFunction) => {
     try {
@@ -39,16 +39,7 @@ router.post('/', protect, uploadMiddleware.single("resumeFile"),
       let originalName: string | undefined;
 
       if (req.file){
-        const allowedTypes = [
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        ];
-
-        if (!allowedTypes.includes(req.file.mimetype)) {
-          return res.status(400).json({ error: "Unsupported file type" });
-        }
-              // Upload to Cloudinary only if file exists
+        // Upload to Cloudinary only if file exists
         const uploadResult = await uploadToCloudinaryJobApplication(
           req.file.buffer,
           req.file.originalname,
@@ -197,8 +188,8 @@ router.delete("/:id", protect,
 
 // @route          UPDATE /api/job-application/:id   
 // @description    update a specific job application by ID
-// @access         Public (private in future with auth middleware)
-router.put('/:id', protect, uploadMiddleware.single("resumeFile"),
+// @access         Private
+router.put('/:id', protect, uploadSingle("resumeFile"),
   validate(updateJobApplicationSchema),
   async(req: Request<any, any, UpdateJobApplicationBody>, res: Response, next: NextFunction) => {
     try {
@@ -213,7 +204,6 @@ router.put('/:id', protect, uploadMiddleware.single("resumeFile"),
         throw new Error('Job Application not found');
       }
   
-      // Check if user owns the cover letter (to be implemented with auth middleware later)
       if (jobApplication.userId && jobApplication.userId.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error('Unauthorized to update this Job Application');

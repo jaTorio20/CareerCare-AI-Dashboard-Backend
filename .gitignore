@@ -1,7 +1,15 @@
+# Node modules
+node_modules/
+
+# Build / compiled output
+dist/
+build/
+
+# Environment variables
 .env
 
-node_modules/
-dist/
-build/    
-uploads
-uploads/    
+# Uploaded files
+uploads/
+
+# Test coverage reports
+coverage/
