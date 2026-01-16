@@ -13,3 +13,6 @@ uploads/
 
 # Test coverage reports
 coverage/
+
+# GitHub configuration files
+.github/
