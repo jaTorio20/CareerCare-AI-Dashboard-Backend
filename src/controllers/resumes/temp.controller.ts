@@ -1,19 +1,17 @@
-import express, { Request, Response, NextFunction } from "express";
 import { v2 as cloudinary } from "cloudinary";
-import { protect } from "../../middleware/authMiddleware";
+import { Request, Response, NextFunction } from "express";
 import { ResumeModel } from "../../models/Resume";
-const router = express.Router();
 
 // @route          GET /api/resumes/temp
 // @description    Fetch latest temp resume with analysis
-// @access         Private
-router.get("/", protect, async (req: Request, res: Response, next: NextFunction) => {
+export const getLatestTempResume =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    const { jobId } = req.query;
 
+    const { jobId } = req.query;
     if (!jobId) {
       return res.status(400).json({ error: "jobId is required" });
     }
@@ -40,14 +38,11 @@ router.get("/", protect, async (req: Request, res: Response, next: NextFunction)
   } catch (err) {
     next(err);
   }
-});
+}
 
-// @route          DELETE /api/resumes/temp/:publicId
+// @route          DELETE /api/resumes/temp/:id
 // @description    DELETE a temporary uploaded resume file from Cloudinary
-// @access         Public
-router.delete(
-  "/:id",
-  protect,
+export const deleteTempResume =
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
@@ -55,9 +50,7 @@ router.delete(
       }
 
       const { id } = req.params;
-
       const resume = await ResumeModel.findById(id);
-
       if (!resume) {
         res.status(404);
         throw new Error("Temporary resume not found");
@@ -74,21 +67,16 @@ router.delete(
         throw new Error("Unauthorized");
       }
 
-      // delete Cloudinary file
       if (resume.publicId) {
         await cloudinary.uploader.destroy(resume.publicId, {
           resource_type: "raw",
         });
       }
 
-      // delete DB record
       await resume.deleteOne();
-
       res.status(200).json({ message: "Temporary resume deleted" });
     } catch (err) {
       next(err);
     }
   }
-);
 
-export default router;

@@ -10,14 +10,11 @@ import { httpLogger } from "./middleware/loggerMiddleware";
 import { errorHandler } from "./middleware/errorHandler";
 
 // Routes
-import authRoutes from "./routes/auth/authRoutes";
-import googleRoutes from "./routes/auth/googleOAuth";
-import analyzeRoutes from "./routes/resumes/analyzeRoutes";
-import resumeRoutes from "./routes/resumes/resumeRoutes";
-import tempRoutes from "./routes/resumes/tempRoutes";
-import generateLetterRoutes from "./routes/coverLetter/generateLetterRoutes";
-import jobApplicationRoutes from "./routes/jobApplication/jobApplicationRoutes";
-import interviewSessionRoutes from "./routes/interview/interviewSessionRoutes";
+import authRoutes from "./routes/auth/auth.route";
+import resumeRoutes from "./routes/resumes/resume.route";
+import coverLetterRoutes from "./routes/coverLetter/coverLetter.route";
+import jobApplicationRoutes from "./routes/jobApplication/jobApplication.route";
+import interviewSessionRoutes from "./routes/interview/interviewSession.route";
 
 const app = express();
 
@@ -49,11 +46,8 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/auth", googleRoutes);
-app.use("/api/resumes/temp", tempRoutes);
-app.use("/api/resumes/analyze", analyzeRoutes);
 app.use("/api/resumes", resumeRoutes);
-app.use("/api/cover-letter", generateLetterRoutes);
+app.use("/api/cover-letter", coverLetterRoutes);
 app.use("/api/job-application", jobApplicationRoutes);
 app.use("/api/interview", interviewSessionRoutes);
 

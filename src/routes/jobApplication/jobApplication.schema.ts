@@ -48,6 +48,7 @@ export const updateJobApplicationSchema = z.object({
   }),
 });
 
+// @Controller Types
 export type CreateJobApplicationBody = z.infer<typeof createJobApplicationSchema>["body"];
 export type UpdateJobApplicationBody = z.infer<typeof updateJobApplicationSchema>["body"];
 export type DeleteJobApplicationParams = z.infer<typeof deleteJobApplicationSchema>["params"];

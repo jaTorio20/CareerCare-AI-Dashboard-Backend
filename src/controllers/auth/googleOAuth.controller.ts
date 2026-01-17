@@ -1,12 +1,10 @@
-import { Router } from "express";
+import { Request, Response, NextFunction } from "express";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { User } from "../../models/User";
 import { generateToken } from "../../utils/generateToken";
 
-const router = Router();
-
-// --- Google Strategy ---
+// --- Google Strategy Configuration ---
 passport.use(
   new GoogleStrategy(
     {
@@ -28,25 +26,23 @@ passport.use(
           return done(null, false, { message: "Google account has no email" });
         }
 
-        // if (email) {
-          user = await User.findOne({ email });
-          if (user) {
-            // Link Google account
-            user.googleId = profile.id;
-            user.name = user.name || profile.displayName;
+        user = await User.findOne({ email });
+        if (user) {
+          // Link Google account
+          user.googleId = profile.id;
+          user.name = user.name || profile.displayName;
 
-            // Always assign avatar as an object
-            if (!user.avatar?.url) {
-              user.avatar = {
-                url: profile.photos?.[0]?.value || "/images/placeholder.jpg",
-                filename: `google-${profile.id}`,
-              };
-            }
-
-            await user.save();
-            return done(null, user);
+          // Always assign avatar as an object
+          if (!user.avatar?.url) {
+            user.avatar = {
+              url: profile.photos?.[0]?.value || "/images/placeholder.jpg",
+              filename: `google-${profile.id}`,
+            };
           }
-        // }
+
+          await user.save();
+          return done(null, user);
+        }
 
         // Step 3: Create new user
         const newUser = await User.create({
@@ -68,8 +64,9 @@ passport.use(
   )
 );
 
-// --- Google OAuth routes ---
-router.get("/google", (req, res, next) => {
+// @route     GET /auth/google
+// @description Initiate Google OAuth flow
+export const googleAuth = (req: Request, res: Response, next: NextFunction) => {
   const redirectTo =
     typeof req.query.redirect === "string" ? req.query.redirect : "/resumes";
 
@@ -78,34 +75,32 @@ router.get("/google", (req, res, next) => {
     session: false,
     state: redirectTo, // carry redirect path through OAuth
   })(req, res, next);
-});
+};
 
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { session: false, failureRedirect: "/login" }),
-  async (req, res) => {
-
-    if (!req.user) {
-      return res.redirect("/login?error=google");
-    }
-    const user = req.user as any;
-
-    // Issue JWT tokens
-    const payload = { userId: user._id.toString() };
-    const accessToken = await generateToken(payload, "15m");
-    const refreshToken = await generateToken(payload, "30d");
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    // Redirect frontend with accessToken
-    const redirectTo = req.query.state || "/";
-    res.redirect(`${process.env.ALLOWED_ORIGINS}${redirectTo}`);
+// @route     GET /auth/google/callback
+// @description Handle Google OAuth callback
+export const googleCallback = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.redirect("/login?error=google");
   }
-);
+  const user = req.user as any;
 
-export default router;
+  // Issue JWT tokens
+  const payload = { userId: user._id.toString() };
+  const accessToken = await generateToken(payload, "15m");
+  const refreshToken = await generateToken(payload, "30d");
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
+  // Redirect frontend with accessToken
+  const redirectTo = req.query.state || "/";
+  res.redirect(`${process.env.ALLOWED_ORIGINS}${redirectTo}`);
+};
+
+// Export passport for middleware use
+export { passport };

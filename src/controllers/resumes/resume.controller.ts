@@ -1,21 +1,13 @@
-import express, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ResumeModel } from "../../models/Resume";
-import { v2 as cloudinary } from "cloudinary";
 import axios from "axios";
-import { protect } from "../../middleware/authMiddleware";
+import { CreateResumeBody, DeleteResumeParams } from "../../routes/resumes/resume.schema";
+import { v2 as cloudinary } from "cloudinary";
 
-//VALIDATION
-import { validate } from "../../middleware/validate";
-import { createResumeSchema, deleteResumeSchema } from "./resume.schema";
-import { CreateResumeBody, DeleteResumeParams } from "./resume.schema";
-
-const router = express.Router();
-
-
-// @route          GET /api/resumes/:id/download
-// @description    Download resume file with original filename
-// @access         Private
-router.get("/:id/download", protect, async (req: Request, res: Response, next: NextFunction) => {
+// @route     GET /resumes/download/:id
+// @description Download resume file
+export const downloadResume =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -47,14 +39,11 @@ router.get("/:id/download", protect, async (req: Request, res: Response, next: N
     res.status(500).json({ error: "Server error while downloading resume" });
     next(err);
   }
-});
+}
 
-
-// @route          POST /api/resumes
-// @description    CREATE a new resume entry (saved as card)
-// @access         Private
-router.post("/", protect, 
-  validate(createResumeSchema), 
+// @route     POST /resumes
+// @description Create a new resume entry (saved as card)
+export const createResume =
 async (req: Request <any, any, CreateResumeBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
@@ -85,12 +74,12 @@ async (req: Request <any, any, CreateResumeBody>, res: Response, next: NextFunct
     console.error("Failed to save resume", err);
     next(err);
   }
-});
+}
 
-// @route          GET /api/resumes
-// @description    fetch all resumes for a user
-// @access          Private
-router.get("/", protect, async (req: Request, res: Response, next: NextFunction) => {
+// @route GET /resumes
+// @description Fetch all resumes for a user
+export const getResumes =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -109,14 +98,17 @@ router.get("/", protect, async (req: Request, res: Response, next: NextFunction)
   } catch (err) {
     next(err);
   }
-});
+}
 
-router.get("/:id", protect, async (req: Request, res: Response, next: NextFunction) => {
+// @route GET /resumes/:id
+// @description Fetch a resume by ID
+export const getResumeById =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    const resume = await ResumeModel.findById({
+    const resume = await ResumeModel.findOne({
       _id: req.params.id,
       userId: req.user._id,
     }); 
@@ -128,20 +120,17 @@ router.get("/:id", protect, async (req: Request, res: Response, next: NextFuncti
   } catch (err) {
     next(err);
   }
+}
 
-});
-
-router.delete("/:id", protect, validate(deleteResumeSchema), 
+// @route DELETE /resumes/:id
+// @description Delete a resume by ID
+export const deleteResume =
 async (req: Request<DeleteResumeParams, any, any>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     const { id } = req.params;
-    // if(!mongoose.Types.ObjectId.isValid(id)) {
-    //   res.status(400);
-    //   throw new Error('Invalid Resume ID');
-    // }
 
     const resume = await ResumeModel.findById(id);
     if (!resume) {
@@ -165,8 +154,4 @@ async (req: Request<DeleteResumeParams, any, any>, res: Response, next: NextFunc
   } catch (err) {   
     next(err);
   }
-});
-
-
-
-export default router;
+}

@@ -1,23 +1,13 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { uploadMiddleware } from '../../middleware/uploadMiddleware';
-import { uploadToCloudinary } from '../../services/cloudinaryService';
-import { protect } from '../../middleware/authMiddleware';
+import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
-import { ResumeModel } from '../../models/Resume';
-import { processJob } from '../../background/jobProcessor';
-
-// VALIDATOR
-import { validate } from '../../middleware/validate';
-import { uploadResumeSchema } from './resume.schema';
-import { UploadResumeBody } from './resume.schema';
-
-const router = express.Router();
+import { uploadToCloudinary } from "../../services/cloudinaryService";
+import { ResumeModel } from "../../models/Resume";
+import { processJob } from "../../background/jobProcessor";
+import { UploadResumeBody } from "../../routes/resumes/resume.schema";
 
 // @route          POST /api/resumes/analyze
 // @desccription   CREATE and analyze a resume WITHOUT saving to DB
-// @access          Public
-router.post("/", protect, uploadMiddleware.single("resumeFile"),
-validate(uploadResumeSchema),
+export const analyzeResume =
  async (req: Request<any, any, UploadResumeBody>, res: Response, next: NextFunction) => {
   try {
     const jobId = crypto.randomUUID();
@@ -73,6 +63,4 @@ validate(uploadResumeSchema),
   } catch (err: any) {
     next(err)
   }
-});
-
-export default router;
+}

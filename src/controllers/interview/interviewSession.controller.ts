@@ -1,39 +1,27 @@
-import express, {Request, Response, NextFunction} from "express";
+import { Request, Response, NextFunction } from "express";
+import { CreateInterviewMessageBody, CreateInterviewMessageParams, CreateInterviewSessionBody, DeleteInterviewSessionParams } from "../../routes/interview/interviewSession.schema";
 import { InterviewSessionModel } from "../../models/Interview/InterviewSession.model";
-import { protect } from "../../middleware/authMiddleware";
 import { InterviewMessageModel } from "../../models/Interview/InterviewMessage";
-import { callAIModel } from "../../services/aiService";
+import { deleteAudioFromB2, getAudioSignedUrl, uploadAudioToB2 } from "../../services/backblaze";
 import { transcribeWithWhisper } from "../../services/whisper";
+import { callAIModel } from "../../services/aiService";
 
-import { getAudioSignedUrl } from "../../services/backblaze";
-import { upload } from "../../middleware/uploadMiddleware";
-import { uploadAudioToB2 } from "../../services/backblaze";
-
-import { deleteAudioFromB2 } from "../../services/backblaze";
-
-// VALIDATOR
-import { validate } from "../../middleware/validate";
-import { createInterviewSessionSchema, createInterviewMessageSchema, deleteInterviewSessionSchema } from "./interviewSession.schema";
-import { CreateInterviewSessionBody, CreateInterviewMessageBody, CreateInterviewMessageParams, DeleteInterviewSessionParams } from "./interviewSession.schema";
-
-const router = express.Router();
-
-router.post('/sessions', protect, 
-  validate(createInterviewSessionSchema),
-  async (req: Request<any, any, CreateInterviewSessionBody >, res: Response, next: NextFunction) => {
+// @route     POST /api/interview/sessions
+// @desc      Create a new interview session
+export const createInterviewSession =
+async (req: Request<any, any, CreateInterviewSessionBody >, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { jobTitle, companyName, topic, difficulty } = req.body;
-
     const interviewSession = new InterviewSessionModel({
-      userId: req.user._id,          // tie session to logged-in user
+      userId: req.user._id, 
       jobTitle,
       companyName,
       topic,
-      difficulty: difficulty || "none", // default if not provided
+      difficulty: difficulty || "none",
       status: "in-progress",
       startedAt: new Date(),
     });
@@ -43,10 +31,12 @@ router.post('/sessions', protect,
   } catch (err) {
     next(err);
   }
-});
+}
 
-// Get all sessions for the logged-in user
-router.get("/sessions", protect, async (req: Request, res: Response, next: NextFunction) => {
+// @route     GET /api/interview/sessions
+// @desc      Get all interview sessions for the authenticated user
+export const getInterviewSessions =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -61,15 +51,12 @@ router.get("/sessions", protect, async (req: Request, res: Response, next: NextF
     console.error("Fetch sessions error:", err);
     next(err);
   }
-});
+}
 
-// it gets the value from InterviewSessionModel
-router.post(
-  "/sessions/:id/chat",
-  protect,
-  upload.single("audio"),
-  validate(createInterviewMessageSchema),
-  async (req: Request<CreateInterviewMessageParams, any, CreateInterviewMessageBody>, res: Response, next: NextFunction) => {
+// @route     POST /api/interview/sessions/:id/chat
+// @desc      Create a new interview message (text or audio) in a session
+export const createInterviewMessage =
+async (req: Request<CreateInterviewMessageParams, any, CreateInterviewMessageBody>, res: Response, next: NextFunction) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -150,11 +137,13 @@ router.post(
     res.status(201).json({ userMessage, aiMessage });
   } catch (err) {
       next(err);
-    }
-  }
-);
+    } 
+}
 
-router.get("/sessions/:id/messages", protect, async (req: Request, res: Response, next: NextFunction) => {
+// @route     GET /api/interview/sessions/:id/messages
+// @desc      Get all messages for a specific interview session
+export const getInterviewMessages =
+async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -165,9 +154,12 @@ router.get("/sessions/:id/messages", protect, async (req: Request, res: Response
   } catch (err) {
     next(err);
   }
-});
+};
 
-router.get("/sessions/:id/audio/:key", protect, async (req: Request, res: Response, next: NextFunction) => { 
+// @route     GET /api/interview/sessions/:id/audio/:key
+// @desc      Get a signed URL for an audio file in a session
+export const getInterviewAudioSignedUrl =
+async (req: Request, res: Response, next: NextFunction) => { 
   try {
    const { key } = req.params; 
    const signedUrl = await getAudioSignedUrl(key); 
@@ -175,11 +167,12 @@ router.get("/sessions/:id/audio/:key", protect, async (req: Request, res: Respon
   } catch (err) { 
     next(err); 
   } 
-});
+}
 
-router.delete("/sessions/:id", protect, 
-  validate(deleteInterviewSessionSchema),
-  async (req: Request<DeleteInterviewSessionParams, any, any>, res: Response, next: NextFunction) => {
+// @route     DELETE /api/interview/sessions/:id
+// @desc      Delete an interview session and its associated audio files
+export const deleteInterviewSession =
+async (req: Request<DeleteInterviewSessionParams, any, any>, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     
@@ -219,8 +212,4 @@ router.delete("/sessions/:id", protect,
   } catch (err) {
     next(err);
   }
-});
-
-
-export default router;
-
+}

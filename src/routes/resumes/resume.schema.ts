@@ -47,6 +47,7 @@ export const uploadResumeSchema = z.object({
   }),
 });
 
+// Type Exports Controllers
 export type CreateResumeBody = z.infer<typeof createResumeSchema>["body"];
 export type UploadResumeBody = z.infer<typeof uploadResumeSchema>["body"];
 export type DeleteResumeParams = z.infer<typeof deleteResumeSchema>["params"];
