@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 import { JWT_SECRET } from "../../utils/getJwtSecret";
 import { generateToken } from "../../utils/generateToken";
 import crypto from "crypto";
-import { sendVerificationEmail } from "../../services/auth/sendOtp";
+import { sendVerificationEmail } from "../../services/auth/sendOtp.service";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "jsonwebtoken";
 import {

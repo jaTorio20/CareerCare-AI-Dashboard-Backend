@@ -1,6 +1,6 @@
 
 import { Request, Response, NextFunction } from "express";
-import { JobApplicationModel } from "../../models/JobApplication";
+import { JobApplicationModel } from "../../models/jobApplication";
 import { CreateJobApplicationBody, DeleteJobApplicationParams, UpdateJobApplicationBody } from "../../routes/jobApplication/jobApplication.schema";
 import { uploadToCloudinaryJobApplication } from "../../services/cloudinaryService";
 import { v2 as cloudinary} from 'cloudinary';

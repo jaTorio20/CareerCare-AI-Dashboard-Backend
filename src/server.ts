@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import logger from "./utils/logger";
 import connectDB from "./config/db";
 import { scheduleCleanupTempResumes } from "./cronJobs/cleanupTempResumes";
+import { startReminderCron } from "./cronJobs/reminder.cron";
 import { startWorker } from "./background/workers/background.worker";
 import app from "./app";
 
@@ -34,6 +35,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== "test") {
     scheduleCleanupTempResumes();
+    startReminderCron();
   }
 
   if (process.env.NODE_ENV !== "test") {

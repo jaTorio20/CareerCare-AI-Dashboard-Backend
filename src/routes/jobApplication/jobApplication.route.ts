@@ -2,14 +2,17 @@ import express from 'express'
 
 import { uploadSingle } from '../../middleware/uploadMiddleware';
 import { protect } from '../../middleware/authMiddleware';
-import { createJobApplication, getAllJobApplications, 
-  getJobApplicationById, deleteJobApplication, updateJobApplication, 
-  downloadResumeFile
- } from '../../controllers/jobApplication/jobApplication.controller';
 
-// VALIDATION
+import {  createJobApplication, getAllJobApplications,
+  getJobApplicationById, deleteJobApplication, updateJobApplication,
+  downloadResumeFile,
+  createReminder, getRemindersByApplication, cancelReminder
+ } from '../../controllers/jobApplication/index';
+
+// VALIDATION 
 import { validate } from '../../middleware/validate';
-import { createJobApplicationSchema, deleteJobApplicationSchema, updateJobApplicationSchema, } from './jobApplication.schema';
+import { createJobApplicationSchema, deleteJobApplicationSchema, 
+  updateJobApplicationSchema, } from './jobApplication.schema';
 
 const router = express.Router();
 
@@ -28,6 +31,11 @@ router.delete("/:id", protect,
   validate(deleteJobApplicationSchema), deleteJobApplication );
 
 router.get("/:id/download", protect, downloadResumeFile);
+
+// REMINDER ROUTES (/api/job-application/:id/reminders)
+router.post('/:id/reminders', createReminder);
+router.get('/:id/reminders', getRemindersByApplication);
+router.delete('/:id/reminders/:reminderId', cancelReminder);
 
 export default router;
 
