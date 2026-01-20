@@ -33,9 +33,9 @@ router.delete("/:id", protect,
 router.get("/:id/download", protect, downloadResumeFile);
 
 // REMINDER ROUTES (/api/job-application/:id/reminders)
-router.post('/:id/reminders', createReminder);
-router.get('/:id/reminders', getRemindersByApplication);
-router.delete('/:id/reminders/:reminderId', cancelReminder);
+router.post('/:id/reminders', protect, createReminder);
+router.get('/:id/reminders', protect, getRemindersByApplication);
+router.delete('/:id/reminders/:reminderId', protect, cancelReminder);
 
 export default router;
 

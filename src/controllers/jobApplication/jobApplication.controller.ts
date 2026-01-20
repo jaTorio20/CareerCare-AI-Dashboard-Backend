@@ -1,6 +1,6 @@
-
 import { Request, Response, NextFunction } from "express";
 import { JobApplicationModel } from "../../models/jobApplication";
+import { ReminderModel } from "../../models/jobApplication";
 import { CreateJobApplicationBody, DeleteJobApplicationParams, UpdateJobApplicationBody } from "../../routes/jobApplication/jobApplication.schema";
 import { uploadToCloudinaryJobApplication } from "../../services/cloudinaryService";
 import { v2 as cloudinary} from 'cloudinary';
@@ -243,9 +243,12 @@ export const deleteJobApplication =
       await cloudinary.uploader.destroy(jobApplication.publicId, { resource_type: "raw" });
     }
 
+    // Delete associated reminders
+    await ReminderModel.deleteMany({ applicationId: id });
+
     await jobApplication.deleteOne();
 
-    res.status(200).json({ message: "Job Application deleted successfully" });
+    res.status(200).json({ message: "Job Application and associated reminders deleted successfully" });
   } catch (err) {
     next(err);
   }

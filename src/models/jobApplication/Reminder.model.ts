@@ -34,7 +34,7 @@ const ReminderSchema = new Schema({
     enum: ['pending', 'sent', 'cancelled'], 
     default: 'pending' 
   }
-});
+}, { timestamps: true });
 
 ReminderSchema.index({ applicationId: 1 });
 ReminderSchema.index({ status: 1, reminderDate: 1 });

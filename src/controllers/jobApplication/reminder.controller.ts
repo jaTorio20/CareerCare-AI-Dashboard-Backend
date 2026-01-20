@@ -48,7 +48,7 @@ async (req: Request<any, any, any>, res: Response, next: NextFunction) => {
 
     if (existingReminder) {
       return res.status(409).json({ 
-        error: `An active ${type} reminder already exists for this job application`,
+        error: `An active ${type} reminder already exists. Please cancel it before creating a new one.`,
         existingReminderId: existingReminder._id,
         hint: "Cancel the existing reminder first before creating a new one"
       });
@@ -114,7 +114,8 @@ export const getRemindersByApplication =
 async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id: applicationId } = req.params;
-    const reminders = await ReminderModel.find({ applicationId });
+    const reminders = await ReminderModel.find({ applicationId })
+      .sort({ updatedAt: -1 });
     res.status(200).json(reminders);
   } catch (err) {
     next(err);
@@ -127,40 +128,30 @@ async (req: Request, res: Response, next: NextFunction) => {
 export const cancelReminder = 
 async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id: applicationId, reminderId } = req.params;
+    const { id: applicationId } = req.params;
 
-    const reminder = await ReminderModel.findOne({
-      _id: reminderId,
-      applicationId: applicationId
+    const pendingReminders = await ReminderModel.find({
+      applicationId,
+      status: 'pending'
     });
 
-    if (!reminder) {
-      return res.status(404).json({ error: "Reminder not found for this job application" });
+    if (pendingReminders.length === 0) {
+      return res.status(404).json({ error: "No pending reminders found for this job application" });
     }
 
-    // Check if already sent
-    if (reminder.status === 'sent') {
-      return res.status(400).json({ error: "Cannot cancel a reminder that has already been sent" });
-    }
-
-    // Check if already cancelled
-    if (reminder.status === 'cancelled') {
-      return res.status(400).json({ error: "Reminder is already cancelled" });
-    }
-
-    const cancelledReminder = await ReminderModel.findByIdAndUpdate(
-      reminderId,
-      { status: 'cancelled' },
-      { new: true }
+    // Cancel all pending reminders
+    const cancelledReminders = await ReminderModel.updateMany(
+      { applicationId, status: 'pending' },
+      { status: 'cancelled' }
     );
 
-    logger.info({ reminderId, applicationId }, 'Reminder cancelled');
+    logger.info({ applicationId }, 'All pending reminders cancelled');
 
     res.status(200).json({ 
-      message: "Reminder cancelled successfully",
-      reminder: cancelledReminder
+      message: "All pending reminders cancelled successfully",
+      cancelledCount: cancelledReminders.modifiedCount
     });
   } catch (err) {
     next(err);
   }
-}
+};
