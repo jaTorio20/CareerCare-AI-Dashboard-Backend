@@ -114,9 +114,36 @@ export const getRemindersByApplication =
 async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id: applicationId } = req.params;
+
+    // Validate applicationId
+    if (!applicationId) {
+      return res.status(400).json({ error: "Application ID is required" });
+    }
+
+    // Pagination parameters
+    const { page = 1, limit = 10 } = req.query;
+    const pageNumber = Math.max(1, parseInt(page as string, 10));
+    const pageSize = Math.max(1, parseInt(limit as string, 10));
+
+    // Query reminders with pagination and selective fields
     const reminders = await ReminderModel.find({ applicationId })
-      .sort({ updatedAt: -1 });
-    res.status(200).json(reminders);
+      .sort({ updatedAt: -1 })
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize)
+      .select("_id type reminderDate status updatedAt");
+
+    // Total count for pagination metadata
+    const totalCount = await ReminderModel.countDocuments({ applicationId });
+
+    res.status(200).json({
+      reminders,
+      pagination: {
+        total: totalCount,
+        page: pageNumber,
+        limit: pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    });
   } catch (err) {
     next(err);
   }
