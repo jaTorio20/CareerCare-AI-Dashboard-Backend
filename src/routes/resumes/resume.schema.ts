@@ -43,7 +43,9 @@ export const deleteResumeSchema = z.object({
 
 export const uploadResumeSchema = z.object({
   body: z.object({
-    jobDescription: z.string().optional(), // optional field
+    jobDescription: z.string()
+    .max(4000, "Job description cannot exceed 4000 characters")
+    .optional(), // optional field
   }),
 });
 

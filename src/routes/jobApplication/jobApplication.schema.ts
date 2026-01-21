@@ -15,14 +15,24 @@ const locationEnum = ['remote', 'onsite', 'hybrid'] as const;
 
 export const createJobApplicationSchema = z.object({
   body: z.object({
-    companyName: z.string().min(1, "companyName is required"),
-    jobTitle: z.string().min(1, "jobTitle is required"),
-    jobLink: z.url("jobLink must be a valid URL").optional(),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters"),
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters"),
+    jobLink: z.url("jobLink must be a valid URL")
+    .max(2048, "jobLink must not exceed 2048 characters")
+    .optional(),
     jobDescription: z.string().max(4000, "Job description cannot exceed 4000 characters").optional(),
-    status: z.enum(statusEnum).optional(),
-    location: z.enum(locationEnum).optional(),
-    notes: z.string().optional(),
-    salaryRange: z.string().optional(),
+    status: z.enum(statusEnum).default('applied'),
+    location: z.enum(locationEnum).default('remote'),
+    notes: z.string()
+    .max(4000, "Notes must not exceed 4000 characters")
+    .optional(),
+    salaryRange: z.string()
+    .max(255, "Salary range must not exceed 255 characters")
+    .optional(),
   }),
 });
 
@@ -37,13 +47,19 @@ export const updateJobApplicationSchema = z.object({
     id: objectId,
   }),
   body: z.object({
-    companyName: z.string().min(1, "companyName is required").optional(),
-    jobTitle: z.string().min(1, "jobTitle is required").optional(),
-    jobLink: z.url("jobLink must be a valid URL").optional(),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters"),
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters"),
+    jobLink: z.url("jobLink must be a valid URL")
+    .max(2048, "jobLink must not exceed 2048 characters")
+    .optional(),
     jobDescription: z.string().max(4000, "Job description cannot exceed 4000 characters").optional(),
-    status: z.enum(statusEnum).optional(),
-    location: z.enum(locationEnum).optional(),
-    notes: z.string().optional(),
+    status: z.enum(statusEnum).default('applied'),
+    location: z.enum(locationEnum).default('remote'),
+    notes: z.string().max(4000, "Notes must not exceed 4000 characters").optional(),
     salaryRange: z.string().optional(),
   }),
 });

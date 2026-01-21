@@ -13,18 +13,33 @@ export const generateCoverLetterSchema = z.object({
     .string()
     .min(1, "jobDescription is required")
     .max(4000, "jobDescription must not exceed 4000 characters"),
-    jobTitle: z.string().min(1, "jobTitle is required"),
-    companyName: z.string().min(1, "companyName is required"),
-    userDetails: z.string().optional(),
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters"),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters"),
+    userDetails: z.string()
+    .max(2000, "userDetails must not exceed 2000 characters")
+    .optional()
   }),
 });
 
 export const saveCoverLetterSchema = z.object({
   body: z.object({
-    jobDescription: z.string().min(1, "jobDescription is required"),
-    jobTitle: z.string().optional(),
-    companyName: z.string().optional(),
-    userDetails: z.string().optional(),
+    jobDescription: z.string().min(1, "jobDescription is required")
+    .max(4000, "jobDescription must not exceed 4000 characters"),
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters")
+    .optional(),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters")
+    .optional(),
+    userDetails: z.string()
+    .max(2000, "userDetails must not exceed 2000 characters")
+    .optional(),
     generatedLetter: z.string().min(1, "generatedLetter is required"),
     editedLetter: z.string().optional(),
   }),
@@ -35,10 +50,13 @@ export const updateCoverLetterSchema = z.object({
     id: objectId,
   }),
   body: z.object({
-    jobTitle: z.string().min(1, "jobTitle is required"),
-    companyName: z.string().min(1, "companyName is required"),
-    jobDescription: z
-    .string()
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters"),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters"),
+    jobDescription: z.string()
     .min(1, "jobDescription is required")
     .max(4000, "jobDescription must not exceed 4000 characters"),
     editedLetter: z.string().min(1, "editedLetter is required"),

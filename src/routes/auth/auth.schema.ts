@@ -24,8 +24,12 @@ export const resendOtpSchema = z.object({
 export const verifyOtpSchema = z.object({
   body: z.object({
     email: z.email({ error: "A valid email is required" }),
-    name: z.string().min(1, "Name is required").transform(sanitizeString),
-    password: z.string().min(8, { error: "Password must be at least 8 characters" }),
+    name: z.string()
+    .min(1, "Name is required")
+    .max(100, "Name must not exceed 100 characters")
+    .transform(sanitizeString),
+    password: z.string().min(8, { error: "Password must be at least 8 characters" })
+    .max(128, { error: "Password must not exceed 128 characters" }),
     otp: z.string().min(6, "OTP is required").max(6, "OTP must be 6 digits"),
   }),
 });
@@ -43,7 +47,9 @@ export const resetPasswordSchema = z.object({
     token: z.string().min(1, {error: "Token is required"}),
   }),
   body: z.object({
-    password: z.string().min(8, { error: "Password must be at least 8 characters" }),
+    password: z.string()
+    .min(8, { error: "Password must be at least 8 characters" })
+    .max(128, { error: "Password must not exceed 128 characters" }),
   }),
 });
 
@@ -60,7 +66,10 @@ export const updateUserSchema = z.object({
   body: z.object({
     name: z.string().min(1, { error: "Name is required" }).transform(sanitizeString).optional(),
     email: z.email().transform(sanitizeString).optional(),
-    password: z.string().min(8, { error: "Password must be at least 8 characters" }).optional(),
+    password: z.string()
+    .min(8, { error: "Password must be at least 8 characters" })
+    .max(128, { error: "Password must not exceed 128 characters" })
+    .optional(),
     avatarUrl: z.url({ error: "Invalid URL" }).optional(),
   }),
 });

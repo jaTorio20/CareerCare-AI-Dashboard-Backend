@@ -14,9 +14,15 @@ const difficultyEnum = ["easy", "medium", "hard", "none"] as const;
 
 export const createInterviewSessionSchema = z.object({
   body: z.object({
-    jobTitle: z.string().min(1, "jobTitle is required"),
-    companyName: z.string().min(1, "companyName is required"),
-    topic: z.string().optional(),
+    jobTitle: z.string()
+    .min(1, "jobTitle is required")
+    .max(255, "jobTitle must not exceed 255 characters"),
+    companyName: z.string()
+    .min(1, "companyName is required")
+    .max(255, "companyName must not exceed 255 characters"),
+    topic: z.string()
+    .max(255, "topic must not exceed 255 characters")
+    .optional(),
     difficulty: z.enum(difficultyEnum).optional(), // default
   }),
 });
@@ -26,7 +32,9 @@ export const createInterviewMessageSchema = z.object({
     id: objectId, // sessionId
   }),
   body: z.object({
-    text: z.string().optional(), // required if no audio
+    text: z.string()
+    .max(5000, "Text must not exceed 5000 characters")
+    .optional(), // required if no audio
   }),
 });
 
