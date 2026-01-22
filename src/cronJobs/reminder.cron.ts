@@ -8,6 +8,8 @@ const BATCH_SIZE = 50;
 const LOOKBACK_MINUTES = 5;  
 const LOOKAHEAD_MINUTES = 2;
 
+let lastQuotaExceeded: boolean | null = null;
+
 /**
  * Cron job that runs every minute as a FALLBACK when Redis quota is exceeded.
  * 
@@ -24,19 +26,25 @@ const LOOKAHEAD_MINUTES = 2;
  * - LOOKAHEAD: Pre-processes reminders about to be due
  */
 async function processDueReminders(): Promise<void> {
-  // Check if Redis quota is exceeded - if not, let BullMQ handle it
   const quota = await checkRedisQuota();
-  
+
+  // Log only if the quota state has changed
+  if (quota.exceeded !== lastQuotaExceeded) {
+    if (quota.exceeded) {
+      logger.info('Redis quota exceeded - cron fallback processing reminders');
+    } else {
+      logger.info('Redis quota available - BullMQ worker resumes handling reminders');
+    }
+    lastQuotaExceeded = quota.exceeded;
+  }
+
   if (!quota.exceeded) {
-    logger.debug('Redis quota OK - BullMQ worker handles reminders, cron skipping');
     return;
   }
 
-  logger.info('Redis quota exceeded - cron fallback processing reminders');
-
   const now = new Date();
   const nowMs = now.getTime();
-  
+
   // Calculate time window for main reminders
   const lookbackTime = new Date(nowMs - LOOKBACK_MINUTES * 60 * 1000);
   const lookaheadTime = new Date(nowMs + LOOKAHEAD_MINUTES * 60 * 1000);

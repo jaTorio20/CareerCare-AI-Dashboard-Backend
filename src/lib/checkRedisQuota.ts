@@ -15,8 +15,9 @@ export async function checkRedisQuota() {
     const limit = resp.data?.max_commands ?? 500000;
     return { used, limit, exceeded: used >= limit };
   } catch (err) {
-    console.error("Failed to check quota:", err);
-    // Fail safe: assume exceeded so we don’t burn quota
-    return { used: 0, limit: 0, exceeded: true };
+    if(process.env.NODE_ENV !== 'production') {
+      console.error("Failed to check quota:", err);
+    }
+    return { used: 0, limit: 0, exceeded: true }; // Fail safe
   }
 }
