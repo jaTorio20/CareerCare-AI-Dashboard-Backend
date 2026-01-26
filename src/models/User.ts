@@ -59,6 +59,10 @@ const userSchema = new Schema({
   lastOtpSentAt: {
     type: Date, // new field
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 }, {
   timestamps: true
 });
@@ -81,8 +85,11 @@ userSchema.pre('save', async function (this: UserDocument) { //before saving. pr
       };
     }
   }
-
 });
+
+// Adding indexes for better performance
+userSchema.index({ name: 1 }); 
+userSchema.index({ isActive: 1 });
 
 // --- add method typing ---
 userSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {

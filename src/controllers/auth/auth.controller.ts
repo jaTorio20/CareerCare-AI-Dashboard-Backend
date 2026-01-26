@@ -301,6 +301,11 @@ export const login = async (
       });
     }
 
+    // Prevent login if user is inactive
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Your account is inactive. Please contact support." });
+    }
+
     // Google-only account (no password set)
     if (!user.password) {
       return res.status(400).json({

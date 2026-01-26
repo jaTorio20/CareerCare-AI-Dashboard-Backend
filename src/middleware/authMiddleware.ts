@@ -35,8 +35,10 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
 export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user || req.user.role !== "admin") {
-    res.status(403);
-    throw new Error("Admin access required");
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required",
+    });
   }
   next();
 };

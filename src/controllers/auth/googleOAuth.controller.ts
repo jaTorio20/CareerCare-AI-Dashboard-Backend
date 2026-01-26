@@ -17,7 +17,12 @@ passport.use(
       try {
         // Step 1: Check if user already linked with Google
         let user = await User.findOne({ googleId: profile.id });
-        if (user) return done(null, user);
+        if (user) {
+          if (!user.isActive) {
+            return done(null, false, { message: "Your account is inactive. Please contact support." });
+          }
+          return done(null, user);
+        }
 
         // Step 2: Check if user exists by email
         const email = profile.emails?.[0]?.value;
@@ -28,6 +33,9 @@ passport.use(
 
         user = await User.findOne({ email });
         if (user) {
+          if (!user.isActive) {
+            return done(null, false, { message: "Your account is inactive. Please contact support." });
+          }
           // Link Google account
           user.googleId = profile.id;
           user.name = user.name || profile.displayName;
@@ -54,6 +62,7 @@ passport.use(
             filename: `google-${profile.id}`,
           },
           isVerified: true, // Google verified email
+          isActive: true,
         });
 
         return done(null, newUser);
