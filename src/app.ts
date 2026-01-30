@@ -15,6 +15,7 @@ import resumeRoutes from "./routes/resumes/resume.route";
 import coverLetterRoutes from "./routes/coverLetter/coverLetter.route";
 import jobApplicationRoutes from "./routes/jobApplication/jobApplication.route";
 import interviewSessionRoutes from "./routes/interview/interviewSession.route";
+import adminRoutes from "./routes/admin/index";
 
 const app = express();
 
@@ -50,7 +51,7 @@ app.use("/api/resumes", resumeRoutes);
 app.use("/api/cover-letter", coverLetterRoutes);
 app.use("/api/job-application", jobApplicationRoutes);
 app.use("/api/interview", interviewSessionRoutes);
-
+app.use("/api/admin", adminRoutes);
 // 404 fallback
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
