@@ -5,7 +5,7 @@ jest.mock("../../../src/services/fileService");
 import { parseFile } from "../../../src/services/fileService";
 import request from "supertest";
 import app from "../../../src/app";
-import { JobApplicationModel } from "../../../src/models/JobApplication";
+import { JobApplicationModel } from "../../../src/models/jobApplication";
 import mongoose from "mongoose";
 
 const { setAuthBehavior, mockUserId } = jest.requireMock("../../../src/middleware/authMiddleware");
@@ -347,7 +347,7 @@ describe("DELETE /api/job-application/:id", () => {
     const res = await request(app).delete(`/api/job-application/${application._id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("Job Application deleted successfully");
+    expect(res.body.message).toBe("Job Application and associated reminders deleted successfully");
 
     // Verify deletion
     const deleted = await JobApplicationModel.findById(application._id);

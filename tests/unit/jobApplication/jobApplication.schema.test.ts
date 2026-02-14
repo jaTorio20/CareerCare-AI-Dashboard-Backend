@@ -210,10 +210,12 @@ describe("JobApplication Zod Schemas", () => {
       expect(result.success).toBe(true);
     });
 
-    it("validates with partial body (all fields optional)", () => {
+    it("validates with partial body (all fields optional except companyName and jobTitle)", () => {
       const data = {
         params: { id: validId },
         body: {
+          companyName: "Partial Company",
+          jobTitle: "Partial Title",
           status: "offer",
         },
       };
@@ -229,7 +231,15 @@ describe("JobApplication Zod Schemas", () => {
       };
 
       const result = updateJobApplicationSchema.safeParse(data);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ path: ["body", "companyName"] }),
+            expect.objectContaining({ path: ["body", "jobTitle"] }),
+          ])
+        );
+      }
     });
 
     it("fails with invalid ObjectId in params", () => {
