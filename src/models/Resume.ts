@@ -1,4 +1,5 @@
 import mongoose, { Schema, InferSchemaType } from "mongoose";
+import { StatisticsModel } from "./Statistics";
 
 const AnalysisSchema = new Schema({
   atsScore: { type: Number, min: 0, max: 100 },
@@ -49,6 +50,20 @@ const ResumeSchema = new Schema({
   isTemp: { type: Boolean, default: true }
 }, { timestamps: true });
 
+// indexing to optimize queries
+ResumeSchema.index({ createdAt: 1, isTemp: 1 });
+
+// post-save hook to update the analyzed resumes count
+ResumeSchema.post("save", async function (doc) {
+  if (doc.analysis) {
+    const totalAnalyzedResumes = await ResumeModel.countDocuments({ analysis: { $exists: true } });
+    await StatisticsModel.findOneAndUpdate(
+      {},
+      { analyzedResumesCount: totalAnalyzedResumes },
+      { upsert: true, new: true }
+    );
+  }
+});
 
 export type Resume = InferSchemaType<typeof ResumeSchema>;
 
