@@ -130,7 +130,7 @@ async (req: Request, res: Response, next: NextFunction) => {
       .sort({ updatedAt: -1 })
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize)
-      .select("_id type reminderDate status updatedAt");
+      .select("_id type reminderDate status remindBefore remindBeforeSent updatedAt");
 
     // Total count for pagination metadata
     const totalCount = await ReminderModel.countDocuments({ applicationId });
