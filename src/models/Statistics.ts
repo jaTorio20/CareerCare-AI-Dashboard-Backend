@@ -8,12 +8,12 @@ const StatisticsSchema = new Schema(
       default: 0,
       min: 0,
     },
-    // analyzedCoverLettersCount: {
-    //   type: Number,
-    //   required: true,
-    //   default: 0,
-    //   min: 0,
-    // },
+    generatedCoverLettersCount: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
     // other metrics here as needed
   },
   {

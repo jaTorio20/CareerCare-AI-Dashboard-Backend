@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { ResumeModel } from "../src/models/Resume.ts";
 import { StatisticsModel } from "../src/models/Statistics.ts";
+import { CoverLetterModel } from "../src/models/CoverLetter.ts";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -16,6 +17,9 @@ const initializeStatistics = async () => {
     // Count all resumes
     const analyzedResumesCount = await ResumeModel.countDocuments();
 
+    // Count all generated cover letters
+    const generatedCoverLettersCount = await CoverLetterModel.countDocuments();
+
     // Check if a Statistics document already exists
     let statistics = await StatisticsModel.findOne();
 
@@ -23,12 +27,14 @@ const initializeStatistics = async () => {
       // Create a new Statistics document if none exists
       statistics = new StatisticsModel({
         analyzedResumesCount,
+        generatedCoverLettersCount,
       });
       await statistics.save();
       console.log("Statistics initialized:", statistics);
     } else {
       // Update the existing Statistics document
       statistics.analyzedResumesCount = analyzedResumesCount;
+      statistics.generatedCoverLettersCount = generatedCoverLettersCount;
       await statistics.save();
       console.log("Statistics updated:", statistics);
     }

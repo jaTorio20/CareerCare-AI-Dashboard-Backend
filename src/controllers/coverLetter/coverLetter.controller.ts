@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { CoverLetterModel } from "../../models/CoverLetter";
 import { generateCoverLetter } from "../../services/aiService";
+import { StatisticsModel } from "../../models/Statistics";
+
 import mongoose from "mongoose";
 import {
   GenerateCoverLetterBody,
@@ -33,6 +35,14 @@ export const generateLetter = async (
       jobTitle,
       companyName
     );
+
+    // Increment the generated cover letter count in StatisticsModel
+    await StatisticsModel.findOneAndUpdate(
+      {},
+      { $inc: { generatedCoverLettersCount: 1 } },
+      { upsert: true, new: true }
+    );
+
     res.status(200).json(coverLetter);
   } catch (err) {
     next(err);
