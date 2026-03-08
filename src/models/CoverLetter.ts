@@ -33,6 +33,9 @@ const CoverLetterSchema = new Schema({
   },
 }, { timestamps: true });
 
+// Updated index to support search filters for jobTitle and companyName
+CoverLetterSchema.index({ jobTitle: 1, companyName: 1 });
+
 // Infer TypeScript type directly from schema
 export type CoverLetter = InferSchemaType<typeof CoverLetterSchema>;
 
